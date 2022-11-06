@@ -1,6 +1,6 @@
 {
-  "name": "wx-web",
-  "homepage": "https://wxrecords.com",
+  "name": "Today's Record High",
+  "homepage": "https://todaysrecordhigh.com",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
