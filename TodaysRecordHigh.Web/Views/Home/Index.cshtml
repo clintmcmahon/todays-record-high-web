@@ -1,0 +1,663 @@
+﻿@using TodaysRecordHigh.Web.Models.ViewModels;
+@model HomeViewModel
+@{
+    ViewData["Title"] = $"{Model.SelectedStationName}, {Model.SelectedStateName}";
+}
+
+<div class="container mt-4">
+    <!-- Location and Date Selector -->
+    <div class="row mb-4">
+        <div class="topbar static-top shadow">
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col-md-4 col-12">
+                                <label for="stateOptions" class="form-label">Select State:</label>
+                                <select class="form-select" id="stateOptions">
+                                    @foreach (var state in Model.States)
+                                    {
+                                        if(state.Value.ToLower() == Model.WeatherRecords?.SelectedState?.ToLower())
+                                        {
+                                            <option selected value="@state.Value">@state.Label</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@state.Value">@state.Label</option>
+
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-12"><label class="form-label" for="stationOptions">Weather
+                                    Station/Area</label>
+                                <select class="form-select" id="stationOptions">
+
+                                </select>
+                            </div>
+                            <div class="m-auto col-md-4 col-12">
+                                <div><a href="https://apps.apple.com/us/app/todays-record-high/id6444070114"
+                                        target="_blank"><img
+                                            src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?&amp;releaseDate=1637539200&amp;h=4ba28d9878faf78b68fc4d346a6b7668"
+                                            alt="Download on the App Store" width="40%"></a><a
+                                        href="https://play.google.com/store/apps/details?id=com.todaysrecordhighmobile&amp;pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1"><img
+                                            alt="Get it on Google Play"
+                                            src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                                            width="50%"></a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div>
+                <div class="row">
+                    <div class="col-12">
+                       
+                        <!-- Link for users to click and open the calendar -->
+                        @{
+                            // Format the DateTime object into a string with the full month name and day
+                            string formattedDate = Model.WeatherRecords.RecordDate.Value.ToString("MMMM dd"); // "December 24"
+                        }
+                         <!-- Hidden input to store the selected date -->
+                        <input type="hidden" id="selectedDate" value="">
+
+                        <div class="selected-date-wrapper">
+                            <h1 id="selectedDateString" class="h2 text-gray-800">@formattedDate</h1>
+                            <a class="selected-date" href="#" id="selectDateLink">(Select Date)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Weather Records Display -->
+    <div class=" row">
+        <!-- Record High -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="recordHighDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Record High (@Model.WeatherRecords.HighDate?.ToString("yyyy"))
+                            </div>
+                            <div id="recordHighTemp" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.HighTemp != null ? Model.WeatherRecords.HighTemp?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <!-- Normal High -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="normalHighDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Normal High
+                            </div>
+                            <div id="normalHighTemp" class="h2 mb-0 ">
+                                @(Model.WeatherNormals.HighTemp != null ? Model.WeatherNormals.HighTemp?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Record Low -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="recordLowDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Record Low (@Model.WeatherRecords.LowDate?.ToString("yyyy"))
+                            </div>
+                            <div id="recordLowTemp" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.LowTemp != null ? Model.WeatherRecords.LowTemp?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Normal Low -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="normalLowDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Normal Low
+                            </div>
+                            <div id="normalLowTemp" class="h2 mb-0 ">
+                                @(Model.WeatherNormals.LowTemp != null ? Model.WeatherNormals.LowTemp?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Coldest High -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="coldestHighDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Coldest High (@Model.WeatherRecords.ColdDate?.ToString("yyyy"))
+                            </div>
+                            <div id="coldestHighTemp" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.ColdHigh != null ? Model.WeatherRecords.ColdHigh?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warmest Low -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="warmestLowDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Warmest Low (@Model.WeatherRecords.WarmDate?.ToString("yyyy"))
+                            </div>
+                            <div id="warmestLowTemp" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.WarmLow != null ? Model.WeatherRecords.WarmLow?.ToString() + " ℉" : "--")
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Snow -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="mostSnowDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Most Snow (@Model.WeatherRecords.MostSnowDate?.ToString("yyyy"))
+                            </div>
+                            <div id="mostSnowAmount" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.MostSnow != null ? Model.WeatherRecords.MostSnow?.ToString() + "''" : "--")
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Precipitation -->
+        <div class="mb-2 col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div id="mostPrecipDate" class="text-xs font-weight-bold text-uppercase mb-1">
+                                Most Pricip (@Model.WeatherRecords.MostPrecipDate?.ToString("yyyy"))
+                            </div>
+                            <div id="mostPrecipAmount" class="h2 mb-0 ">
+                                @(Model.WeatherRecords.MostPrecip != null ? Model.WeatherRecords.MostPrecip?.ToString() + "''" : "--")
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-12">
+            <h1 class="h2 text-gray-800">Recent temperatures</h1>
+        </div>
+        <div class="col-12">
+            <div class="row">
+                <div class="mb-2 col-md-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                        Days above normal
+                                    </div>
+                                    <div id="daysAboveNormal" class="h2 mb-0 ">
+                                        @(Model.MonthNormalObserved.DaysAboveNormal != null ? Model.MonthNormalObserved.DaysAboveNormal : "--")
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2 col-md-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                        Days below normal
+                                    </div>
+                                    <div id="daysBelowNormal" class="h2 mb-0 ">
+                                        @(Model.MonthNormalObserved.DaysBelowNormal != null ? Model.MonthNormalObserved.DaysBelowNormal : "--")
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <canvas id="monthNormalObservedChart" width="800" height="400"></canvas>
+                </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var monthNormalObservedChart = null;
+            var stationData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StationData));
+            populateMonthNormalObserved(@Html.Raw(Json.Serialize(Model.MonthNormalObserved.Data)));
+            $('#selectedDate').val('@Model.WeatherRecords.RecordDate.Value.ToString("yyyy-MM-dd")'); 
+            $('#selectedDate').datepicker({
+                dateFormat: 'yy-mm-dd',
+                onSelect: function(dateText) {
+                    $("#selectedDate").val(dateText); // Update the value of the input with the selected date
+                    formatDate(dateText);
+                    updateRecords();
+                }
+            });
+
+             // When the link is clicked, open the datepicker
+            $('#selectDateLink').click(function(e) {
+                e.preventDefault(); // Prevent the default link behavior
+                $('#selectedDate').datepicker('show'); // Show the datepicker
+            });
+
+            function getStationsByState(stateShortCode) {
+                var state = stationData.find(function (state) {
+                    return state.shortCode.toLowerCase() === stateShortCode.toLowerCase();
+                });
+
+                if (state) {
+                    var stations = state.stations.filter(function (station) {
+                        return station.name.toLowerCase().endsWith("area");
+                    }).sort(function (a, b) {
+                        if (a.name > b.name) return 1;
+                        if (a.name < b.name) return -1;
+                        return 0;
+                    });
+
+                    return stations;
+                }
+
+                return null;
+            }
+
+            $('#stateOptions').change(function () {
+                // Get the selected state short code
+                var selectedState = $(this).val();
+                populateStations(selectedState);
+                updateRecords();
+
+                // Update the URL with the selected state
+                updateQueryStringParameter('selectedState', selectedState);
+            });
+
+            $('#stationOptions').change(function () {
+                var selectedStationId = $(this).val();
+                updateRecords();
+
+                 // Update the URL with the selected station
+                updateQueryStringParameter('selectedStationId', selectedStationId);
+            });
+
+            //Function to populate the Month Normal Observed chart
+            function populateMonthNormalObserved(data){
+               var ctx = document.getElementById('monthNormalObservedChart').getContext('2d');
+
+                // Destroy the existing chart instance if it exists
+                if (monthNormalObservedChart) {
+                    monthNormalObservedChart.destroy();
+                }
+
+                var labels = data.map(function(x) { return x[0]; }); // Dates
+                var highs = data.map(function(x) { return parseFloat(x[1]); }); // High temps
+                var lows = data.map(function(x) { return parseFloat(x[2]); }); // Low temps
+                var normalHighs = data.map(function(x) { return parseFloat(x[3]); }); // Normal high temps
+                var normalLows = data.map(function(x) { return parseFloat(x[4]); }); // Normal low temps
+
+                monthNormalObservedChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'High Temperature',
+                            data: highs,
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                        }, {
+                            label: 'Low Temperature',
+                            data: lows,
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                        }, {
+                            label: 'Normal High Temperature',
+                            data: normalHighs,
+                            borderColor: 'rgb(255, 206, 86)',
+                            borderDash: [5, 5],
+                            fill: true,
+                            tension: 0.1
+                        }, {
+                            label: 'Normal Low Temperature',
+                            data: normalLows,
+                            borderColor: 'rgb(75, 192, 192)',
+                            borderDash: [5, 5],
+                            fill: '-1',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Temperature (°F)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return tooltipItems[0].label;
+                                    },
+                                    beforeBody: function(tooltipItems) {
+                                        return `High: ${tooltipItems[0].raw.toFixed(2)}°F, Low: ${tooltipItems[1].raw.toFixed(2)}°F`;
+                                    },
+                                    afterBody: function(tooltipItems) {
+                                        const highIndex = tooltipItems.findIndex(item => item.dataset.label === 'Normal High Temperature');
+                                        const lowIndex = tooltipItems.findIndex(item => item.dataset.label === 'Normal Low Temperature');
+                                        const normalHigh = tooltipItems[highIndex].raw.toFixed(2);
+                                        const normalLow = tooltipItems[lowIndex].raw.toFixed(2);
+                                        return `Normal Range: ${normalLow}°F - ${normalHigh}°F`;
+                                    }
+                                }
+                            },
+                            legend: {
+                                labels: {
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Function to update query string parameters
+            function updateQueryStringParameter(key, value) {
+                var baseUrl = [location.protocol, '//', location.host, location.pathname].join('');
+                var urlQueryString = document.location.search;
+                var newParam = key + '=' + value;
+                var params = '?' + newParam;
+
+                // If the "search" string exists, then build params from it
+                if (urlQueryString) {
+                    var keyRegex = new RegExp('([?&])' + key + '[^&]*');
+                    
+                    // If param exists already, update it
+                    if (urlQueryString.match(keyRegex) !== null) {
+                        params = urlQueryString.replace(keyRegex, "$1" + newParam);
+                    } else { // Otherwise, add it to end of query string
+                        params = urlQueryString + '&' + newParam;
+                    }
+                }
+                window.history.replaceState({}, "", baseUrl + params);
+            }
+
+            function populateStations(selectedState) {
+                // Call getStationsByState with the selected state short code
+                var stations = getStationsByState(selectedState);
+                // Clear the existing options in stationOptions
+                $('#stationOptions').empty();
+
+                // Check if stations are returned and populate stationOptions
+                if (stations) {
+                    // Get the selectedStation from the URL query string
+                    var selectedStation = new URLSearchParams(window.location.search).get('selectedStationId');
+
+                    stations.forEach(function(station) {
+                        // Create an option element for each station
+                        var option = new Option(station.name, station.sids[0]);
+                        
+                        // If the current station's sids[0] matches the selectedStation, mark it as selected
+                        if(station.sids[0] === selectedStation) {
+                            $(option).attr('selected', 'selected');
+                        }
+                        
+                        // Append the option to the select element
+                        $('#stationOptions').append(option);
+                    });
+                }
+            }
+
+            function updatePageTitle(newTitle) {
+                $("title").text(newTitle + " - Today's Record High Temperature");
+            }
+
+            function updateRecords() {
+                var selectedState = $("#stateOptions").val();
+                var selectedStation = $("#stationOptions").val();
+                
+                var selectedDate = $("#selectedDate").val();
+                console.log(selectedDate);
+                var parts = selectedDate.split('-'); 
+                var selectedShortDate = parts[1] + '-' + parts[2];  
+
+                var selectedStateName = $("#stateOptions option:selected").text();
+                var selectedStationName = $("#stationOptions option:selected").text();
+                
+                updatePageTitle(selectedStationName + ", " + selectedStateName);
+
+                //
+                //Get new records
+                //
+                var url = `home/getweatherrecords?selectedStationId=${encodeURIComponent(selectedStation)}&startDate=${encodeURIComponent(selectedShortDate)}&endDate=${encodeURIComponent(selectedShortDate)}`;
+
+                // Record High
+                $('#recordHighDate').text(`Record High (--)`);
+                $('#recordHighTemp').text(`--`);
+
+                // Record Low
+                $('#recordLowDate').text(`Record Low (--)`);
+                $('#recordLowTemp').text(`--`);
+
+                // Coldest High
+                $('#coldestHighDate').text(`Coldest High (--)`);
+                $('#coldestHighTemp').text(`--`);
+
+                // Warmest Low
+                $('#warmestLowDate').text(`Warmest Low (--)`);
+                $('#warmestLowTemp').text(`--`);
+
+                // Most Snow
+                $('#mostSnowDate').text(`Most Snow (--)`);
+                $('#mostSnowAmount').text(`--`);
+
+                // Most Precipitation
+                $('#mostPrecipDate').text(`Most Precipitation (--`);
+                $('#mostPrecipAmount').text(`--`);
+
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (records) {
+                        // Update the UI with the new records
+                        if (records) {
+                            // Record High
+                            $('#recordHighDate').text(`Record High (${records.highDate ? new Date(records.highDate).getFullYear() : '--'})`);
+                            $('#recordHighTemp').text(`${records.highTemp != null ? records.highTemp + " ℉" : "--"}`);
+
+                            // Record Low
+                            $('#recordLowDate').text(`Record Low (${records.lowDate ? new Date(records.lowDate).getFullYear() : '--'})`);
+                            $('#recordLowTemp').text(`${records.lowTemp != null ? records.lowTemp + " ℉" : "--"}`);
+
+                            // Coldest High
+                            $('#coldestHighDate').text(`Coldest High (${records.coldDate ? new Date(records.coldDate).getFullYear() : '--'})`);
+                            $('#coldestHighTemp').text(`${records.coldHigh != null ? records.coldHigh + " ℉" : "--"}`);
+
+                            // Warmest Low
+                            $('#warmestLowDate').text(`Warmest Low (${records.warmDate ? new Date(records.warmDate).getFullYear() : '--'})`);
+                            $('#warmestLowTemp').text(`${records.warmLow != null ? records.warmLow + " ℉" : "--"}`);
+
+                            // Most Snow
+                            $('#mostSnowDate').text(`Most Snow (${records.mostSnowDate ? new Date(records.mostSnowDate).getFullYear() : '--'})`);
+                            $('#mostSnowAmount').text(`${records.mostSnow != null ? records.mostSnow + "''" : "--"}`);
+
+                            // Most Precipitation
+                            $('#mostPrecipDate').text(`Most Precipitation (${records.mostPrecipDate ? new Date(records.mostPrecipDate).getFullYear() : '--'})`);
+                            $('#mostPrecipAmount').text(`${records.mostPrecip != null ? records.mostPrecip + "''" : "--"}`);
+
+                        } else {
+                            // Handle case where no records are found or an error occurred
+                            $('.text-uppercase').text('Data not available');
+                            $('.text-gray-800').text('--');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle errors here
+                        console.error("Error fetching weather records: " + error);
+                    }
+                });
+
+                //
+                //Get Normals
+                //
+                var url = `home/getweathernormals?selectedStationId=${encodeURIComponent(selectedStation)}&startDate=${encodeURIComponent(selectedShortDate)}&endDate=${encodeURIComponent(selectedShortDate)}`;
+
+                // Normal High
+                $('#normalHighDate').text(`Normal High`);
+                $('#normalHighTemp').text(`--`);
+
+                // Normal Low
+                $('#normalLowDate').text(`Normal Low`);
+                $('#normalLowTemp').text(`--`);
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (normals) {
+                        // Update the UI with the new normals
+                        if (normals) {
+                            // Normal High
+                            $('#normalHighDate').text(`Normal High`);
+                            $('#normalHighTemp').text(`${normals.highTemp != null ? normals.highTemp + " ℉" : "--"}`);
+
+                            // Normal Low
+                            $('#normalLowDate').text(`Normal Low `);
+                            $('#normalLowTemp').text(`${normals.lowTemp != null ? normals.lowTemp + " ℉" : "--"}`);
+                          
+                        } else {
+                            // Handle case where no normals are found or an error occurred
+                            $('.text-uppercase').text('Data not available');
+                            $('.text-gray-800').text('--');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle errors here
+                        console.error("Error fetching weather normals: " + error);
+                    }
+                });
+
+                //
+                //Get Normal and Observed for the month
+                //
+                var url = `home/getmonthlynormalobserved?selectedStationId=${encodeURIComponent(selectedStation)}&startDate=${encodeURIComponent(selectedDate)}`;
+
+                // Days above normal
+                $('#daysAboveNormal').text(`--`);
+
+                // Days below normal
+                $('#daysBelowNormal').text(`--`);
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (normalObserved) {
+                        // Update the UI with the new data
+                        if (normalObserved) {
+                            $('#daysAboveNormal').text(`${normalObserved.daysAboveNormal != null ? normalObserved.daysAboveNormal : "--"}`);
+                            $('#daysBelowNormal').text(`${normalObserved.daysBelowNormal != null ? normalObserved.daysBelowNormal  : "--"}`);
+                            populateMonthNormalObserved(normalObserved.data);
+                          
+                        } else {
+                            // Handle case where no normals are found or an error occurred
+                            $('.text-uppercase').text('Data not available');
+                            $('.text-gray-800').text('--');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle errors here
+                        console.error("Error fetching weather normal and observed: " + error);
+                    }
+                });
+            }
+
+            function formatDate(selectedDateString) {
+               
+                // Split the date string into month and day parts
+                let parts = selectedDateString.split("-");
+                let month = parseInt(parts[1], 10) - 1; // Adjust for zero-based indexing
+                let day = parseInt(parts[2], 10);
+
+                // Create a date object for the current year using the month and day
+                let date = new Date(new Date().getFullYear(), month, day);
+
+                // Options to get month name and day
+                let options = { month: 'long', day: 'numeric' };
+
+                // Format the date to "Month day" (e.g., "December 24")
+                let formattedDate = date.toLocaleDateString('en-US', options);
+
+                $("#selectedDateString").text(formattedDate);
+            }
+
+            populateStations($("#stateOptions").val());
+    });
+    </script>
+}

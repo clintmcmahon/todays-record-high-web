@@ -1,0 +1,7 @@
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/TodaysRecordHigh.Web
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/appsettings.Development.json
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/appsettings.json
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/TodaysRecordHigh.Web.dll
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/TodaysRecordHigh.Web.deps.json
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/TodaysRecordHigh.Web.runtimeconfig.json
+/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/bin/Release/net8.0/publish/TodaysRecordHigh.Web.pdb
