@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/temp.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Record and Normal Temperatures for US Cities</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.15.4/css/all.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <!-- SEO Specific Tags -->
+    <meta name="description"
+        content="Explore record high and low, along with normal temperatures for any date in various cities across the United States. Perfect for planning and historical reference." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Today's Record High - Find Record and Normal Temperatures for US Cities" />
+    <meta property="og:site_name" content="Today's Record High" />
+    <meta property="og:url" content="https://www.todaysrecordhigh.com" />
+    <meta property="og:description"
+        content="Discover today's and historical record high, low, and normal temperatures for cities across the United States. Ideal for travelers, researchers, and weather enthusiasts." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://www.todaysrecordhigh.com/og-image.png" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Today's Record High - Daily and Historical Temperatures in US Cities" />
+    <meta name="twitter:description"
+        content="Check daily and historical temperature records and norms for any U.S. city. Useful for education, travel planning, and curiosity." />
+    <meta name="twitter:image" content="https://www.todaysrecordhigh.com/twitter-card-image.png" />
+
+    <!-- Extra Enhancements -->
+    <link rel="canonical" href="https://www.todaysrecordhigh.com" />
+    <meta name="robots" content="index, follow" />
+    <script async src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body class="">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">Today's Record High</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/about">About</a>
+                        </li>
+
+                    </ul>
+
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container mt-4">
+            &copy; @DateTime.Now.Year - Today's Record High
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    <script defer data-domain="todaysrecordhigh.com" src="https://plausible.io/js/script.js"></script>
+
+</body>
+
+</html>
