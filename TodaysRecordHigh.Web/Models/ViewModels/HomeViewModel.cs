@@ -1,5 +1,6 @@
 using System.Data;
 using TodaysRecordHigh.Web.Models;
+using TodaysRecordHigh.Web.Models.ACIS;
 namespace TodaysRecordHigh.Web.Models.ViewModels;
 
 public class HomeViewModel
@@ -75,6 +76,7 @@ public class HomeViewModel
     public WeatherRecords WeatherRecords { get; set; }
     public WeatherNormals WeatherNormals { get; set; }
     public MonthNormalObserved MonthNormalObserved { get; set; }
+    public WeatherResponse DailyHistory { get; set; }
     public bool IsDefault { get; set; }
     public dynamic StationData { get; set; }
     public string SelectedStateName { get; set; }

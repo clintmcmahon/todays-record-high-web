@@ -58,14 +58,17 @@ public class HomeController : Controller
         var recordsTask = _weatherDataService.GetRecords(selectedStationId, selectedDate.Value.ToString("MM-dd"), selectedDate.Value.ToString("MM-dd"));
         var normalsTask = _weatherDataService.GetNormals(selectedStationId, selectedDate.Value.ToString("yyyy-MM-dd"), selectedDate.Value.ToString("yyyy-MM-dd"));
         var monthNormalsObservedTask = _weatherDataService.GetMonthNormalObserved(selectedStationId, selectedDate.Value.ToString("yyyy-MM-dd"));
+        var dailyHistoryTask = _weatherDataService.GetDailyHistory(selectedStationId, selectedDate.Value.ToString("MM-dd"));
+
 
         // Await tasks to complete
-        await Task.WhenAll(recordsTask, normalsTask, monthNormalsObservedTask);
+        await Task.WhenAll(recordsTask, normalsTask, monthNormalsObservedTask, dailyHistoryTask);
 
         // Retrieve the results of each task
         var records = await recordsTask;
         var normals = await normalsTask;
         var monthNormalsObserved = await monthNormalsObservedTask;
+        var dailyHistory = await dailyHistoryTask;
 
         records.StationId = selectedStationId;
         records.SelectedState = selectedState;
@@ -74,6 +77,7 @@ public class HomeController : Controller
         model.WeatherRecords = records;
         model.WeatherNormals = normals;
         model.MonthNormalObserved = monthNormalsObserved;
+        model.DailyHistory = dailyHistory;
 
         // Construct the full path to the file
         var filePath = Path.Combine(_env.WebRootPath, "js", "stationData.json");

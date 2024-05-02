@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Collections.Generic;
 using TodaysRecordHigh.Web.Models;
 using TodaysRecordHigh.Web.Models.ACIS;
+using System.Text;
 
 namespace TodaysRecordHigh.Web.Services;
 
@@ -239,6 +240,36 @@ public class WeatherDataService : IWeatherDataService
 
     }
 
+    public async Task<WeatherResponse> GetDailyHistory(string selectedStation, string selectedDate)
+    {
+        var query = new
+        {
+            sid = selectedStation,
+            elems = new dynamic[]
+               {
+            new { name = "maxt", interval = new int[] {1, 0, 0}, duration = 1},
+            new { name = "mint", interval = new int[] {1, 0, 0}, duration = 1},
+            new { name = "pcpn", interval = new int[] {1, 0, 0}, duration = 1},
+            new { name = "snow", interval = new int[] {1, 0, 0}, duration = 1},
+            new { name = "snwd", interval = new int[] {1, 0, 0}, duration = 1}
+               },
+            sDate = $"1871-{selectedDate}",
+            eDate = $"{DateTime.Now.Year}-{selectedDate}"
+        };
+
+        var serializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(query, serializerOptions), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(DATA_URL, content);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var jsonData = JsonSerializer.Deserialize<WeatherResponse>(json, serializerOptions);
+
+        return jsonData;
+    }
 
 
     public StationData GetStationDataByState(string selectedState)
@@ -303,6 +334,7 @@ public interface IWeatherDataService
     Task<WeatherRecords> GetRecords(string selectedStation, string startDate, string endDate);
     Task<WeatherNormals> GetNormals(string selectedStation, string startDate, string endDate);
     Task<MonthNormalObserved> GetMonthNormalObserved(string selectedStation, string startDate);
+    Task<WeatherResponse> GetDailyHistory(string selectedStation, string startDate);
     StationData GetStationDataByState(string selectedState);
 
 }
