@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj": {}
+    "/Users/clintmcmahon/Code/projects/weather/todays-record-high-web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj": {}
   },
   "projects": {
-    "/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj": {
+    "/Users/clintmcmahon/Code/projects/weather/todays-record-high-web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj",
+        "projectUniqueName": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj",
         "projectName": "TodaysRecordHigh.Web",
-        "projectPath": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj",
+        "projectPath": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-web/TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj",
         "packagesPath": "/Users/clintmcmahon/.nuget/packages/",
-        "outputPath": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-mvc.Web/TodaysRecordHigh.Web/obj/",
+        "outputPath": "/Users/clintmcmahon/Code/projects/weather/todays-record-high-web/TodaysRecordHigh.Web/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/clintmcmahon/.nuget/NuGet/NuGet.Config"
