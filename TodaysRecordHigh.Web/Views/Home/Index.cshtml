@@ -325,23 +325,19 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
+            var dailyHistoryTable = null;
             var monthNormalObservedChart = null;
+            var dailyHistoryChart = null;
             var stationData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StationData));
             populateMonthNormalObserved(@Html.Raw(Json.Serialize(Model.MonthNormalObserved.Data)));
             populateDailyHistory(@Html.Raw(Json.Serialize(Model.DailyHistory.Data)));
 
-            $('#dailyHistoryDataTable').DataTable({
-                "pageLength": 100, // Display 100 records per page
+            dailyHistoryTable = $('#dailyHistoryDataTable').DataTable({
+                "pageLength": 200, // Display 100 records per page
                 "order": [], // Remove default ordering
                 "responsive": true,
-                "columnDefs": [
-                    {
-                        "render": function ( data, type, row ) {
-                            return data.split('-')[0]; // Only show the year
-                        },
-                        "targets": 0 // Target the first column
-                    }
-                ]
+                  "retrieve": true, // Ensures we can re-initialize without error
+        "destroy": true  // Allows table re-initialization
             });
 
             $('#selectedDate').val('@Model.WeatherRecords.RecordDate.Value.ToString("yyyy-MM-dd")'); 
@@ -495,7 +491,12 @@
                 const snowfalls = data.map(x => parseFloat(x[4]));
                 const snowDepths = data.map(x => parseFloat(x[5]));
 
-                const dailyHistoryChart = new Chart(ctx, {
+                // Destroy the existing chart instance if it exists
+                if (dailyHistoryChart) {
+                    dailyHistoryChart.destroy();
+                }
+
+                dailyHistoryChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: dates,
@@ -791,6 +792,44 @@
                     error: function (xhr, status, error) {
                         // Handle errors here
                         console.error("Error fetching weather normal and observed: " + error);
+                    }
+                });
+
+                //
+                //Get Normal and Observed for the month
+                //
+                var url = `home/getdailyhistory?selectedStationId=${encodeURIComponent(selectedStation)}&startDate=${encodeURIComponent(selectedShortDate)}`;
+                dailyHistoryTable.clear().draw(); // Clear the existing table data
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (dailyHistory) {
+                        // Update the UI with the new data
+                        if (dailyHistory) {
+                            populateDailyHistory(dailyHistory.data);
+    
+                                // Append new rows based on AJAX data
+                            dailyHistory.data.forEach(function(item) {
+                               dailyHistoryTable.row.add([
+                                item[0],
+                                item[1],
+                                item[2],
+                                item[3],
+                                item[4],
+                                item[5]
+                    ]).draw();
+                          });
+                        } else {
+                            // Handle case where no normals are found or an error occurred
+                            $('.text-uppercase').text('Data not available');
+                            $('.text-gray-800').text('--');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle errors here
+                        console.error("Error fetching weather daily history: " + error);
                     }
                 });
             }

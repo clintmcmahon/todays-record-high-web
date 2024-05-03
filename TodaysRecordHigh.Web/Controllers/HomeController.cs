@@ -167,6 +167,30 @@ public class HomeController : Controller
         }
     }
 
+    public async Task<JsonResult> GetDailyHistory(string selectedStationId, string startDate)
+    {
+        // Ensure the parameters are not null or empty; if they are, use defaults or return an error
+        if (string.IsNullOrEmpty(selectedStationId) || string.IsNullOrEmpty(startDate))
+        {
+            // Handle the error according to your application's requirements
+            return Json(new { error = "Invalid parameters" });
+        }
+
+        // Call the service to get the daily history
+        var dailyHistory = await _weatherDataService.GetDailyHistory(selectedStationId, startDate);
+
+        // Check if the operation was successful and return the daily history
+        if (dailyHistory != null)
+        {
+            return Json(dailyHistory);
+        }
+        else
+        {
+            // Handle the scenario when normals are null or the operation was unsuccessful
+            return Json(new { error = "No daily history found or an error occurred" });
+        }
+    }
+
 
     public IActionResult Privacy()
     {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TodaysRecordHigh.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+27e3445b19fa8233521f875641b7381c1c5d3f9d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d2c9e268b1e6020bac6943e2d35b20e2c97365e")]
 [assembly: System.Reflection.AssemblyProductAttribute("TodaysRecordHigh.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TodaysRecordHigh.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
