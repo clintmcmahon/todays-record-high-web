@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"]</title>
+
+    @{
+        var metaDesc = ViewData["MetaDescription"]?.ToString()
+            ?? "Explore all-time record high temperatures for hundreds of U.S. weather stations. See what today's record is for your city.";
+        var ogTitle = ViewData["Title"]?.ToString() ?? "Today's Record High";
+        var canonicalPath = Context.Request.Path.Value ?? "/";
+        var canonicalUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{canonicalPath}";
+    }
+
+    <!-- Primary meta -->
+    <meta name="description" content="@metaDesc" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="@canonicalUrl" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="@ogTitle" />
+    <meta property="og:description" content="@metaDesc" />
+    <meta property="og:url" content="@canonicalUrl" />
+    <meta property="og:site_name" content="Today's Record High" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="@ogTitle" />
+    <meta name="twitter:description" content="@metaDesc" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <link href="/css/site.css" rel="stylesheet" />
+
+    @RenderSection("Head", required: false)
+</head>
+<body>
+    <div id="page-loader"></div>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/">Today's Record High</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav" aria-controls="navbarNav"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/stations">All Stations</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/about">About</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    <footer class="border-top mt-5 py-4 text-center text-muted small">
+        <div class="container">
+            <p class="mb-1">&copy; @DateTime.Now.Year Today's Record High</p>
+            <p class="mb-0">
+                Climate data provided by
+                <a href="https://www.rcc-acis.org/" target="_blank" rel="noopener" class="text-muted">RCC ACIS / NOAA Threadex</a>.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        // Show a slim red progress bar whenever a same-origin link is clicked
+        const loader = document.getElementById('page-loader');
+        document.addEventListener('click', e => {
+            const a = e.target.closest('a');
+            if (!a || !a.href || a.target === '_blank') return;
+            try {
+                const url = new URL(a.href);
+                if (url.origin !== location.origin) return;
+            } catch { return; }
+            loader.classList.add('loading');
+        });
+        window.addEventListener('pageshow', () => loader.classList.remove('loading'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+@model TodaysRecordHigh.Web.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "Today's Record High – U.S. Record High Temperatures by City";
+}
+
+<div class="container py-4">
+
+    <!-- Hero -->
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Today's Record High</h1>
+        <p class="lead text-muted mb-1">Today is <strong>@Model.TodayLabel</strong></p>
+        <p class="text-muted">All-time record high temperatures for today's date at major U.S. weather stations.</p>
+    </div>
+
+    <!-- Featured Station Cards -->
+    <div class="mb-5">
+        <h2 class="h5 fw-semibold mb-3">Record Highs for @Model.TodayLabel</h2>
+        <div class="row g-3" id="featuredGrid">
+            @foreach (var item in Model.FeaturedRecords)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 featured-card shadow-sm" data-slug="@item.Station.Slug"
+                         data-record-temp="@(item.RecordTemp?.ToString() ?? "")">
+                        <div class="card-body text-center py-3">
+                            <div class="fw-semibold mb-2 small">@item.Station.City, @item.Station.State</div>
+                            @if (item.RecordTemp.HasValue)
+                            {
+                                <div class="display-6 fw-bold text-danger">@item.RecordTemp°F</div>
+                                @if (!string.IsNullOrEmpty(item.FormattedRecordDate))
+                                {
+                                    <div class="small text-muted mt-1">@item.FormattedRecordDate</div>
+                                }
+                                <div class="record-current mt-2 d-none"></div>
+                                @if (item.NormalTemp.HasValue)
+                                {
+                                    <div class="small text-muted record-normal mt-1">
+                                        Normal: @item.NormalTemp.Value.ToString("F1")°F (@item.NormalDepartureLabel)
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted small mt-2">Data unavailable</div>
+                            }
+                        </div>
+                        <div class="card-footer text-center py-2" style="font-size:.8rem">
+                            <a href="/stations/@item.Station.Slug" class="text-decoration-none">View records &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-3">
+        <div class="col-md-8 mx-auto position-relative">
+            <label for="searchBox" class="form-label fw-semibold">Search stations</label>
+            <input type="text" id="searchBox" class="form-control form-control-lg"
+                   placeholder="e.g. Denver, CO or Minnesota" autocomplete="off" />
+            <ul id="typeaheadResults" class="list-group position-absolute w-100 mt-1 shadow" style="z-index:1000;"></ul>
+        </div>
+        <div class="col-md-4 d-flex align-items-end mt-3 mt-md-0">
+            <button id="nearMeBtn" class="btn btn-outline-primary w-100">
+                &#x1F4CD; Stations Near Me
+            </button>
+        </div>
+    </div>
+
+    <!-- Near Me Results -->
+    <div id="nearMeResults" class="mb-3 d-none">
+        <div class="card border-primary">
+            <div class="card-body">
+                <h6 class="card-title text-primary mb-3">Nearest Stations</h6>
+                <ul class="list-unstyled mb-0" id="nearMeList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Browse by State / City -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="stateSelect" class="form-label">Browse by State</label>
+            <select class="form-select" id="stateSelect">
+                <option selected disabled value="">Select a state</option>
+            </select>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+            <label for="citySelect" class="form-label">Select City</label>
+            <select class="form-select" id="citySelect" disabled>
+                <option selected disabled value="">Select a city</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div class="mb-3">
+        <div id="stationMap" class="border rounded" style="height:560px;"></div>
+        <p class="text-muted small mt-1 mb-0">Click a station marker to view its climate records. Clusters expand when you zoom in.</p>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const stations = @Html.Raw(Model.StationsJson);
+        const featuredSlugs = '@Model.FeaturedSlugsQueryString';
+    </script>
+
+    <!-- Typeahead -->
+    <script>
+        const searchBox = document.getElementById('searchBox');
+        const resultsBox = document.getElementById('typeaheadResults');
+
+        searchBox.addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            resultsBox.innerHTML = '';
+            if (!q) return;
+
+            stations
+                .filter(s => `${s.name} ${s.city} ${s.state} ${s.stateName}`.toLowerCase().includes(q))
+                .slice(0, 10)
+                .forEach(s => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item list-group-item-action';
+                    li.textContent = `${s.name} (${s.city}, ${s.stateName})`;
+                    li.style.cursor = 'pointer';
+                    li.onclick = () => window.location.href = `/stations/${s.slug}`;
+                    resultsBox.appendChild(li);
+                });
+        });
+
+        document.addEventListener('click', e => {
+            if (!resultsBox.contains(e.target) && e.target !== searchBox)
+                resultsBox.innerHTML = '';
+        });
+    </script>
+
+    <!-- State / City dropdowns -->
+    <script>
+        const stateSelect = document.getElementById('stateSelect');
+        const citySelect = document.getElementById('citySelect');
+
+        const stateMap = {};
+        stations.forEach(s => {
+            if (!stateMap[s.state]) stateMap[s.state] = [];
+            stateMap[s.state].push(s);
+        });
+
+        Object.keys(stateMap).sort().forEach(state => {
+            const opt = document.createElement('option');
+            opt.value = state;
+            opt.textContent = stateMap[state][0].stateName + ' (' + state + ')';
+            stateSelect.appendChild(opt);
+        });
+
+        stateSelect.addEventListener('change', function () {
+            const cities = stateMap[this.value] || [];
+            citySelect.innerHTML = '<option selected disabled value="">Select a city</option>';
+            cities.sort((a, b) => a.city.localeCompare(b.city)).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.slug;
+                opt.textContent = s.city;
+                citySelect.appendChild(opt);
+            });
+            citySelect.disabled = false;
+        });
+
+        citySelect.addEventListener('change', function () {
+            if (this.value) window.location.href = `/stations/${this.value}`;
+        });
+    </script>
+
+    <!-- Near Me -->
+    <script>
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const R = 6371, toRad = x => x * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        document.getElementById('nearMeBtn').addEventListener('click', function () {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+            this.disabled = true;
+            this.textContent = 'Locating…';
+            const btn = this;
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    btn.disabled = false;
+                    btn.innerHTML = '&#x1F4CD; Stations Near Me';
+                    const { latitude: lat, longitude: lon } = pos.coords;
+                    const nearest = stations
+                        .filter(s => s.latitude && s.longitude)
+                        .map(s => ({ ...s, distKm: haversineKm(lat, lon, s.latitude, s.longitude) }))
+                        .sort((a, b) => a.distKm - b.distKm)
+                        .slice(0, 6);
+
+                    const list = document.getElementById('nearMeList');
+                    list.innerHTML = '';
+                    nearest.forEach(s => {
+                        const mi = (s.distKm * 0.621371).toFixed(0);
+                        const li = document.createElement('li');
+                        li.className = 'mb-2';
+                        li.innerHTML = `<a href="/stations/${s.slug}" class="fw-semibold">${s.city}, ${s.state}</a>
+                            <span class="text-muted small ms-2">${mi} mi away</span>`;
+                        list.appendChild(li);
+                    });
+
+                    document.getElementById('nearMeResults').classList.remove('d-none');
+
+                    if (nearest.length > 0 && typeof map !== 'undefined') {
+                        map.flyTo({ center: [lon, lat], zoom: 7, speed: 1.4 });
+                    }
+                },
+                () => {
+                    btn.disabled = false;
+                    btn.innerHTML = '&#x1F4CD; Stations Near Me';
+                    alert('Unable to retrieve your location.');
+                }
+            );
+        });
+    </script>
+
+    <!-- Live current conditions overlay (record data already server-rendered above) -->
+    <script>
+        (async function loadCurrentConditions() {
+            if (!featuredSlugs) return;
+            try {
+                const res = await fetch(`/api/records/today?slugs=${encodeURIComponent(featuredSlugs)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const bySlug = {};
+                data.forEach(d => bySlug[d.slug] = d);
+
+                document.querySelectorAll('.featured-card').forEach(card => {
+                    const slug = card.dataset.slug;
+                    const d = bySlug[slug];
+                    if (!d || d.currentTemp == null) return;
+
+                    const recordTemp = parseFloat(card.dataset.recordTemp);
+                    const diff = !isNaN(recordTemp) ? recordTemp - d.currentTemp : null;
+                    const emoji = d.weatherEmoji ? `${d.weatherEmoji} ` : '';
+                    let html = `<span class="fw-semibold">${emoji}${d.currentTemp.toFixed(0)}°F</span>`;
+                    if (d.currentTempAsOf) {
+                        const tz = d.tzAbbr ? ` ${d.tzAbbr}` : '';
+                        html += `<span class="text-muted ms-1" style="font-size:.75rem">as of ${d.currentTempAsOf}${tz}</span>`;
+                    }
+                    if (diff !== null && diff <= 0) {
+                        html += ` <span class="badge bg-danger ms-1" style="font-size:.7rem">🚨 Record!</span>`;
+                    } else if (diff !== null && diff <= 5) {
+                        html += ` <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">🔥 ${diff.toFixed(0)}° from record</span>`;
+                    }
+                    const el = card.querySelector('.record-current');
+                    el.innerHTML = html;
+                    el.classList.remove('d-none');
+                });
+            } catch (e) {
+                console.error('Live conditions fetch failed:', e);
+            }
+        })();
+    </script>
+
+    <!-- Mapbox GL -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+    <!-- Clustered station map -->
+    <script>
+        mapboxgl.accessToken = '@Model.MapboxToken';
+
+        const map = new mapboxgl.Map({
+            container: 'stationMap',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [-98.5, 39.8],
+            zoom: 3.5,
+            projection: 'mercator'
+        });
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, maxWidth: '220px' });
+
+        const geojson = {
+            type: 'FeatureCollection',
+            features: stations
+                .filter(s => s.latitude && s.longitude)
+                .map(s => ({
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: [s.longitude, s.latitude] },
+                    properties: { slug: s.slug, name: s.name, city: s.city, stateName: s.stateName }
+                }))
+        };
+
+        map.on('load', () => {
+            map.addSource('stations', {
+                type: 'geojson',
+                data: geojson,
+                cluster: true,
+                clusterMaxZoom: 8,
+                clusterRadius: 45
+            });
+
+            // Cluster circles
+            map.addLayer({
+                id: 'clusters',
+                type: 'circle',
+                source: 'stations',
+                filter: ['has', 'point_count'],
+                paint: {
+                    'circle-color': [
+                        'step', ['get', 'point_count'],
+                        '#74b9e8', 10, '#3d8fd1', 30, '#1a5fa8'
+                    ],
+                    'circle-radius': [
+                        'step', ['get', 'point_count'],
+                        18, 10, 26, 30, 34
+                    ],
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+
+            // Cluster count labels
+            map.addLayer({
+                id: 'cluster-count',
+                type: 'symbol',
+                source: 'stations',
+                filter: ['has', 'point_count'],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-size': 12,
+                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold']
+                },
+                paint: { 'text-color': '#ffffff' }
+            });
+
+            // Individual station dots
+            map.addLayer({
+                id: 'unclustered-point',
+                type: 'circle',
+                source: 'stations',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                    'circle-color': '#007bff',
+                    'circle-radius': 6,
+                    'circle-stroke-width': 1.5,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+
+            // Expand cluster on click
+            map.on('click', 'clusters', e => {
+                const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+                const clusterId = features[0].properties.cluster_id;
+                map.getSource('stations').getClusterExpansionZoom(clusterId, (err, zoom) => {
+                    if (!err) map.easeTo({ center: features[0].geometry.coordinates, zoom });
+                });
+            });
+
+            // Navigate to station on click
+            map.on('click', 'unclustered-point', e => {
+                window.location.href = `/stations/${e.features[0].properties.slug}`;
+            });
+
+            // Hover popup for individual stations
+            map.on('mouseenter', 'unclustered-point', e => {
+                map.getCanvas().style.cursor = 'pointer';
+                const p = e.features[0].properties;
+                const coords = e.features[0].geometry.coordinates.slice();
+                popup.setLngLat(coords).setHTML(
+                    `<div style="font-size:13px;line-height:1.4">
+                        <strong>${p.name}</strong><br/>${p.stateName}<br/>
+                        <a href="/stations/${p.slug}" style="color:#007bff">View records &rarr;</a>
+                    </div>`
+                ).addTo(map);
+            });
+
+            map.on('mouseleave', 'unclustered-point', () => {
+                map.getCanvas().style.cursor = '';
+                popup.remove();
+            });
+
+            map.on('mouseenter', 'clusters', () => map.getCanvas().style.cursor = 'pointer');
+            map.on('mouseleave', 'clusters', () => map.getCanvas().style.cursor = '');
+        });
+    </script>
+}

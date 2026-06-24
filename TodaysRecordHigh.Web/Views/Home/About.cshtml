@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "About – Today's Record High";
+    ViewData["MetaDescription"] = "Today's Record High is a weather reference tool for exploring all-time record temperatures and climate trends at hundreds of U.S. weather stations.";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
+
+            <h1 class="h2 fw-bold mb-1">About Today's Record High</h1>
+            <p class="text-muted mb-4">A climate reference tool built out of curiosity about heat.</p>
+
+            <h2 class="h5 fw-semibold mt-4 mb-2">What is this?</h2>
+            <p>Today's Record High lets you look up the all-time record high temperature ever recorded on today's date at hundreds of U.S. weather stations — plus the record low, the 1991–2020 climate normal, and how this year is tracking compared to history.</p>
+            <p>Each station page goes deeper: how hot has it been this year compared to normal? Are summer nights getting warmer over time? Is rainfall up or down? The goal is to put today's weather in context — not just "it's hot" but "how does this compare to every other June 24th on record?"</p>
+
+            <h2 class="h5 fw-semibold mt-4 mb-2">Why does it exist?</h2>
+            <p>During heat waves, news coverage often says a city "broke a record" without telling you what the record actually was, how close today came to it, or whether this is part of a longer pattern. This site tries to answer all of those questions in one place.</p>
+            <p>It's also just interesting. Weather records are a surprisingly rich dataset — every station has decades of daily observations that tell a story about how a place's climate has shifted over time.</p>
+
+            <h2 class="h5 fw-semibold mt-4 mb-2">Where does the data come from?</h2>
+            <p>All historical temperature and precipitation data comes from <a href="https://www.rcc-acis.org/" target="_blank" rel="noopener">RCC ACIS</a> (Regional Climate Centers Applied Climate Information System), which distributes NOAA's Threadex dataset — a quality-controlled archive of daily observations going back over 100 years at major stations.</p>
+            <p>Climate normals (the "expected" values) are the 1991–2020 NOAA normals, recalculated every decade to reflect recent climate. Current conditions are pulled from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, a free and open weather API.</p>
+
+            <h2 class="h5 fw-semibold mt-4 mb-2">How do I use it?</h2>
+            <ul>
+                <li>The <a href="/">home page</a> shows today's record high for a set of major U.S. cities alongside current conditions, so you can see at a glance how close any city is to its record.</li>
+                <li>Click any city — or browse <a href="/stations">all stations</a> — to see the full detail page with record tables, departure-from-normal charts, precipitation history, and warm nights trends.</li>
+                <li>The map on the home page lets you pan around and find any station near you.</li>
+            </ul>
+
+            <div class="mt-5 p-4 rounded-3 border bg-light small text-muted">
+                <strong>A note on accuracy:</strong> Records reflect the period of record for each station, which varies. A "record" high of 98°F at a station with data back to 1900 means something different than at a station with data back to 1975. Period of record dates are shown on each station page.
+            </div>
+
+        </div>
+    </div>
+</div>

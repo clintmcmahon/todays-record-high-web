@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+.idea/
+
+# .NET user secrets (stored at ~/.microsoft/usersecrets/ — never in the repo)
+**/secrets.json
+
+# Secrets — never commit files containing real keys or passwords
+appsettings.Production.json
+appsettings.Local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

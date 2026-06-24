@@ -1,0 +1,1023 @@
+@model TodaysRecordHigh.Web.ViewModels.StationDetailViewModel
+@using System.Text.Json
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = $"{Model.Station.City}, {Model.Station.State} – Record High Temperatures | Today's Record High";
+    ViewData["MetaDescription"] = Model.AllTimeRecordTemp.HasValue
+        ? $"All-time record high for {Model.TodayLabel} in {Model.Station.City}, {Model.Station.State}: {Model.AllTimeRecordTemp}°F. Explore record lows, departure from normal, precipitation history, and warm nights trends. NOAA Threadex data since {Model.PeriodOfRecordStart?.Substring(0, 4)}."
+        : $"Explore all-time record high and low temperatures, precipitation history, and climate trends for {Model.Station.City}, {Model.Station.State}. NOAA Threadex historical data.";
+
+    // Pre-serialize chart data for JS
+    var hotDaysJson = JsonSerializer.Serialize(Model.HotDaysPerYear.Select(x => new { year = x.Year, count = x.Count }));
+    var ytdJson = JsonSerializer.Serialize(Model.YtdDepartures.Select(d => new {
+        date = d.Date, actual = d.ActualTemp, normal = d.NormalTemp, departure = d.Departure
+    }));
+    var warmNightsJson    = JsonSerializer.Serialize(Model.WarmNights?.WarmNightsPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
+    var decadeJson        = JsonSerializer.Serialize(Model.WarmNights?.AvgLowByDecade.Select(x => new { label = x.Label, avgLow = Math.Round(x.AvgLow, 1) }) ?? []);
+    var warmNightsHistAvg = Model.WarmNights?.HistoricalAvg?.ToString("F1") ?? "null";
+    var precipAnnualJson  = JsonSerializer.Serialize(Model.Precip?.AnnualTotals.Select(x => new { year = x.Year, actual = x.Actual, normal = x.Normal }) ?? []);
+    var precipMonthlyJson = JsonSerializer.Serialize(Model.Precip?.MonthlyLast24.Select(x => new { year = x.Year, month = x.Month, actual = x.Actual, normal = x.Normal }) ?? []);
+    var precipHeavyJson   = JsonSerializer.Serialize(Model.Precip?.HeavyRainDaysPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
+    var currentYear = DateTime.Now.Year;
+    var currentMonth = DateTime.Now.Month;
+    var monthName = DateTime.Now.ToString("MMMM");
+}
+
+@section Head {
+<script type="application/ld+json">
+{
+  "@@context": "https://schema.org",
+  "@@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@@type": "ListItem", "position": 1, "name": "Home", "item": "@($"{Context.Request.Scheme}://{Context.Request.Host}/")" },
+    { "@@type": "ListItem", "position": 2, "name": "All Stations", "item": "@($"{Context.Request.Scheme}://{Context.Request.Host}/stations")" },
+    { "@@type": "ListItem", "position": 3, "name": "@Model.Station.City, @Model.Station.State", "item": "@($"{Context.Request.Scheme}://{Context.Request.Host}/stations/{Model.Station.Slug}")" }
+  ]
+}
+</script>
+@if (Model.HasData)
+{
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Dataset",
+      "name": "All-Time Record High Temperatures – @Model.Station.City, @Model.Station.State",
+      "description": "@(ViewData["MetaDescription"]?.ToString()?.Replace("\"","'"))",
+      "temporalCoverage": "@Model.PeriodOfRecordStart/@Model.PeriodOfRecordEnd",
+      "spatialCoverage": {
+        "@@type": "Place",
+        "name": "@Model.Station.City, @Model.Station.StateName",
+        "address": { "@@type": "PostalAddress", "addressLocality": "@Model.Station.City", "addressRegion": "@Model.Station.State", "addressCountry": "US" }
+        @if (Model.Station.Latitude.HasValue && Model.Station.Longitude.HasValue) {
+            <text>,"geo":{"@@type":"GeoCoordinates","latitude":@Model.Station.Latitude.Value,"longitude":@Model.Station.Longitude.Value}</text>
+        }
+      },
+      "provider": { "@@type": "Organization", "name": "NOAA / RCC ACIS", "url": "https://www.rcc-acis.org/" }
+    }
+    </script>
+}
+}
+
+<style>
+    .stat-hero-card { border-radius: 12px; }
+    .stat-hero-temp { font-size: 3.5rem; font-weight: 800; line-height: 1; }
+    .extreme-card { border-radius: 10px; transition: box-shadow 0.15s; }
+    .extreme-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .extreme-icon { font-size: 1.8rem; }
+    .normal-badge { font-size: 0.85rem; }
+    .chart-container { position: relative; height: 280px; }
+    .section-divider { border: 0; border-top: 2px solid #f0f0f0; margin: 2rem 0; }
+    @@media (max-width: 576px) { .stat-hero-temp { font-size: 2.6rem; } }
+</style>
+
+<div class="container mt-4 mb-5">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active">@Model.Station.DisplayName</li>
+        </ol>
+    </nav>
+
+    <!-- Station header -->
+    <div class="mb-4">
+        <h1 class="h2 fw-bold mb-1">@Model.Station.City, @Model.Station.State</h1>
+        <p class="text-muted mb-0 small">
+            @Model.Station.StateName
+            @if (Model.PeriodOfRecordStart is not null) {
+                <span class="mx-1">&middot;</span>
+                <span>Records since @Model.PeriodOfRecordLabel</span>
+            }
+        </p>
+    </div>
+
+    <!-- Current conditions banner -->
+    @if (Model.Current is not null)
+    {
+        var asOf = Model.Current.AsOf != default
+            ? Model.Current.AsOf.ToString("h:mm tt") + (string.IsNullOrEmpty(Model.Current.TimezoneAbbr) ? "" : $" {Model.Current.TimezoneAbbr}")
+            : "";
+        <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3 border" style="background:#f8fafc;">
+            <div>
+                <span class="fs-3 fw-bold">@Model.Current.WeatherEmoji @Model.Current.TempF.ToString("F0")°F</span>
+                @if (Math.Abs(Model.Current.FeelsLikeF - Model.Current.TempF) >= 3)
+                {
+                    <span class="text-muted ms-2 small">Feels like @Model.Current.FeelsLikeF.ToString("F0")°</span>
+                }
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-semibold small">Currently in @Model.Station.City</div>
+                @if (!string.IsNullOrEmpty(asOf))
+                {
+                    <div class="text-muted" style="font-size:.8rem">As of @asOf</div>
+                }
+            </div>
+            @if (Model.RecordProximityLabel is not null)
+            {
+                <div class="badge bg-@Model.RecordProximityCssClass fs-6 px-3 py-2 text-wrap text-start"
+                     style="max-width:220px;line-height:1.3;">
+                    @if (Model.RecordProximityCssClass == "danger" && Model.AllTimeRecordTemp.HasValue && Model.Current.TempF >= Model.AllTimeRecordTemp.Value)
+                    {
+                        <text>🚨 </text>
+                    }
+                    else if (Model.RecordProximityCssClass is "danger" or "warning")
+                    {
+                        <text>🔥 </text>
+                    }
+                    @Model.RecordProximityLabel
+                </div>
+            }
+        </div>
+    }
+
+    @if (!Model.HasData)
+    {
+        <div class="alert alert-warning d-flex align-items-center gap-3" role="alert">
+            <span style="font-size:1.5rem">&#9888;</span>
+            <div>
+                <strong>No climate data available</strong> for this station.
+                <a href="@Context.Request.Path" class="alert-link">Refresh</a> or
+                <a href="/" class="alert-link">return home</a>.
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Tab navigation -->
+        <ul class="nav nav-tabs mb-4" id="stationTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-records"
+                        type="button" role="tab" aria-selected="true">Records &amp; Trends</button>
+            </li>
+            @if (Model.Precip is not null)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-precipitation"
+                            type="button" role="tab">Precipitation</button>
+                </li>
+            }
+            @if (Model.WarmNights is not null && Model.WarmNights.WarmNightsPerYear.Count > 0)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-warm-nights"
+                            type="button" role="tab">Warm Nights</button>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-content" id="stationTabContent">
+        <div class="tab-pane fade show active" id="tab-records" role="tabpanel">
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 1 — Today's Date Records (High + Low side by side)
+        ═══════════════════════════════════════════════════════════════════ -->
+        <section class="mb-4">
+            <p class="text-uppercase fw-semibold text-muted small mb-3 letter-spacing-1">
+                Records for <strong class="text-dark">@Model.TodayLabel</strong>
+            </p>
+            <div class="row g-3">
+
+                <!-- Record High -->
+                <div class="col-sm-6">
+                    <div class="card stat-hero-card border-0 bg-danger bg-opacity-10 h-100">
+                        <div class="card-body text-center py-4">
+                            <p class="text-danger fw-semibold small text-uppercase mb-2">&#x1F525; Record High</p>
+                            @if (Model.AllTimeRecordTemp.HasValue)
+                            {
+                                <div class="stat-hero-temp text-danger">@Model.AllTimeRecordTemp°F</div>
+                                @if (Model.AllTimeRecordDate is not null && DateTime.TryParse(Model.AllTimeRecordDate, out var rhi))
+                                {
+                                    <p class="text-muted mt-2 mb-1 small">@rhi.ToString("MMMM d, yyyy")</p>
+                                }
+                                @if (Model.NormalMaxTemp.HasValue)
+                                {
+                                    var dep = Model.RecordHighDepartureFromNormal!.Value;
+                                    <span class="badge bg-danger bg-opacity-20 text-danger normal-badge">
+                                        @(dep >= 0 ? "+" : "")@dep.ToString("F0")° from @Model.NormalMaxTemp.Value.ToString("F0")° normal
+                                    </span>
+                                }
+                            }
+                            else { <p class="text-muted">No data</p> }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Record Low -->
+                <div class="col-sm-6">
+                    <div class="card stat-hero-card border-0 bg-primary bg-opacity-10 h-100">
+                        <div class="card-body text-center py-4">
+                            <p class="text-primary fw-semibold small text-uppercase mb-2">&#x2744; Record Low</p>
+                            @if (Model.AllTimeRecordLowTemp.HasValue)
+                            {
+                                <div class="stat-hero-temp text-primary">@Model.AllTimeRecordLowTemp°F</div>
+                                @if (Model.AllTimeRecordLowDate is not null && DateTime.TryParse(Model.AllTimeRecordLowDate, out var rlo))
+                                {
+                                    <p class="text-muted mt-2 mb-1 small">@rlo.ToString("MMMM d, yyyy")</p>
+                                }
+                                @if (Model.NormalMinTemp.HasValue)
+                                {
+                                    var dep = Model.RecordLowDepartureFromNormal!.Value;
+                                    <span class="badge bg-primary bg-opacity-20 text-primary normal-badge">
+                                        @(dep >= 0 ? "+" : "")@dep.ToString("F0")° from @Model.NormalMinTemp.Value.ToString("F0")° normal
+                                    </span>
+                                }
+                            }
+                            else { <p class="text-muted">No data</p> }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Normal temperature row -->
+            @if (Model.NormalMaxTemp.HasValue || Model.NormalMinTemp.HasValue)
+            {
+                <div class="mt-3 px-1 d-flex gap-4 small text-muted">
+                    @if (Model.NormalMaxTemp.HasValue)
+                    {
+                        <span>&#127774; Normal high: <strong>@Model.NormalMaxTemp.Value.ToString("F0")°F</strong></span>
+                    }
+                    @if (Model.NormalMinTemp.HasValue)
+                    {
+                        <span>&#127761; Normal low: <strong>@Model.NormalMinTemp.Value.ToString("F0")°F</strong></span>
+                    }
+                    <span class="ms-auto text-muted" style="font-size:0.75rem">1991–2020 normals</span>
+                </div>
+            }
+        </section>
+
+        <hr class="section-divider" />
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 2 — All-Time Extremes (any date, any year)
+        ═══════════════════════════════════════════════════════════════════ -->
+        @if (Model.Extremes is not null)
+        {
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">All-Time Records — @Model.Station.City</h2>
+                <div class="row g-3">
+
+                    @{
+                        string FormatExtremeDate(string? d) =>
+                            d is not null && DateTime.TryParse(d, out var dt)
+                                ? dt.ToString("MMM d, yyyy") : (d ?? "—");
+                    }
+
+                    <!-- Hottest Day Ever -->
+                    <div class="col-6 col-md-3">
+                        <div class="card extreme-card border-0 h-100" style="background:#fff5f5;">
+                            <div class="card-body text-center py-3 px-2">
+                                <div class="extreme-icon mb-1">&#x1F525;</div>
+                                <div class="fw-bold text-danger fs-4">
+                                    @(Model.Extremes.MaxTemp.HasValue ? $"{Model.Extremes.MaxTemp}°F" : "—")
+                                </div>
+                                <div class="small text-muted mt-1">Hottest Day Ever</div>
+                                <div class="small fw-medium">@FormatExtremeDate(Model.Extremes.MaxTempDate)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coldest Day Ever -->
+                    <div class="col-6 col-md-3">
+                        <div class="card extreme-card border-0 h-100" style="background:#f0f5ff;">
+                            <div class="card-body text-center py-3 px-2">
+                                <div class="extreme-icon mb-1">&#x2744;</div>
+                                <div class="fw-bold text-primary fs-4">
+                                    @(Model.Extremes.MinTemp.HasValue ? $"{Model.Extremes.MinTemp}°F" : "—")
+                                </div>
+                                <div class="small text-muted mt-1">Coldest Day Ever</div>
+                                <div class="small fw-medium">@FormatExtremeDate(Model.Extremes.MinTempDate)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wettest Day Ever -->
+                    <div class="col-6 col-md-3">
+                        <div class="card extreme-card border-0 h-100" style="background:#f0f8ff;">
+                            <div class="card-body text-center py-3 px-2">
+                                <div class="extreme-icon mb-1">&#x1F327;</div>
+                                <div class="fw-bold text-info fs-4">
+                                    @(Model.Extremes.MaxPcpn.HasValue ? $"{Model.Extremes.MaxPcpn.Value:F2}\"" : "—")
+                                </div>
+                                <div class="small text-muted mt-1">Wettest Day Ever</div>
+                                <div class="small fw-medium">@FormatExtremeDate(Model.Extremes.MaxPcpnDate)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Most Snow in One Day -->
+                    <div class="col-6 col-md-3">
+                        <div class="card extreme-card border-0 h-100" style="background:#f8f8ff;">
+                            <div class="card-body text-center py-3 px-2">
+                                <div class="extreme-icon mb-1">&#x2603;</div>
+                                <div class="fw-bold fs-4" style="color:#6366f1;">
+                                    @(Model.Extremes.MaxSnow.HasValue ? $"{Model.Extremes.MaxSnow.Value:F1}\"" : "—")
+                                </div>
+                                <div class="small text-muted mt-1">Most Snow in One Day</div>
+                                <div class="small fw-medium">@FormatExtremeDate(Model.Extremes.MaxSnowDate)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <hr class="section-divider" />
+        }
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 3 — YTD Departure from Normal Chart
+        ═══════════════════════════════════════════════════════════════════ -->
+        @if (Model.YtdDepartures.Count > 10)
+        {
+            <section class="mb-4">
+                <div class="d-flex align-items-baseline gap-3 mb-3">
+                    <h2 class="h5 fw-bold mb-0">@currentYear Daily High Temperature vs Normal</h2>
+                    <span class="small text-muted">Year to date</span>
+                </div>
+                <div class="card border-0 bg-light">
+                    <div class="card-body py-3 px-3">
+                        <div class="chart-container" style="height:240px;">
+                            <canvas id="departureChart"></canvas>
+                        </div>
+                        <div class="d-flex gap-4 mt-2 justify-content-center small text-muted">
+                            <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;"></span> Above normal</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px;"></span> Below normal</span>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.NormalMaxTemp.HasValue)
+                {
+                    var aboveCount = Model.YtdDepartures.Count(d => d.Departure > 0);
+                    var totalWithData = Model.YtdDepartures.Count(d => d.Departure.HasValue);
+                    <p class="small text-muted mt-2 mb-0">
+                        @aboveCount of @totalWithData days with data were above the 1991–2020 normal high for their date.
+                    </p>
+                }
+            </section>
+
+            <hr class="section-divider" />
+        }
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 4 — 90°F Days Per Year Chart
+        ═══════════════════════════════════════════════════════════════════ -->
+        @if (Model.HotDaysPerYear.Count > 5)
+        {
+            var completeYears = Model.HotDaysPerYear.Where(x => x.Year < currentYear).ToList();
+            var avgHotDays = completeYears.Count > 0 ? completeYears.Average(x => x.Count) : 0;
+            var maxHotYear = completeYears.Count > 0
+                ? completeYears.OrderByDescending(x => x.Count).First()
+                : Model.HotDaysPerYear.OrderByDescending(x => x.Count).First();
+            var thisYearEntry = Model.HotDaysPerYear.FirstOrDefault(x => x.Year == currentYear);
+            var last10 = completeYears.TakeLast(10).ToList();
+            var avg10 = last10.Count > 0 ? last10.Average(x => x.Count) : 0;
+            <section class="mb-4">
+                <div class="d-flex align-items-baseline gap-3 mb-3">
+                    <h2 class="h5 fw-bold mb-0">Days ≥ 90°F Per Year</h2>
+                    <span class="small text-muted">@Model.HotDaysPerYear.First().Year–@currentYear</span>
+                </div>
+                <div class="row g-3 mb-3">
+                    @if (thisYearEntry.Year > 0)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 rounded" style="background:#fefce8;border:1px solid #fde047;">
+                                <div class="fw-bold fs-5" style="color:#854d0e;">@thisYearEntry.Count</div>
+                                <div class="small text-muted">@currentYear so far</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold fs-5">@avgHotDays.ToString("F0")</div>
+                                <div class="small text-muted">Avg/year 1970–@(currentYear-1)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold fs-5">@avg10.ToString("F0")</div>
+                                <div class="small text-muted">Avg/year (last 10 complete)</div>
+                            </div>
+                        </div>
+                    }
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fw-bold fs-5 text-danger">@maxHotYear.Count</div>
+                            <div class="small text-muted">Most in a year (@maxHotYear.Year)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light">
+                    <div class="card-body py-3 px-3">
+                        <div class="chart-container">
+                            <canvas id="hotDaysChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="section-divider" />
+        }
+
+        <!-- ══ Records table + about (close of #tab-records) ═══════════════ -->
+        <section class="mb-4">
+            <div class="row g-4">
+                <div class="col-md-7">
+                    <h2 class="h5 fw-bold mb-3">Top 10 Record Highs — @Model.TodayLabel</h2>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                            <thead class="table-danger table-sm">
+                                <tr>
+                                    <th class="text-center" style="width:2.5rem">#</th>
+                                    <th>Temp</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.TopRecords.Count; i++)
+                                {
+                                    var rec = Model.TopRecords[i];
+                                    <tr class="@(i == 0 ? "fw-semibold" : "")">
+                                        <td class="text-center text-muted small">@(i == 0 ? "🏆" : (i + 1).ToString())</td>
+                                        <td class="text-danger">@rec.Temp°F</td>
+                                        <td class="small">@rec.FormattedDate</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @if (Model.TopRecordLows.Count > 0)
+                {
+                    <div class="col-md-5">
+                        <h2 class="h5 fw-bold mb-3">Top 5 Record Lows — @Model.TodayLabel</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                                <thead class="table-primary table-sm">
+                                    <tr>
+                                        <th class="text-center" style="width:2.5rem">#</th>
+                                        <th>Temp</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.TopRecordLows.Count; i++)
+                                    {
+                                        var rec = Model.TopRecordLows[i];
+                                        <tr class="@(i == 0 ? "fw-semibold" : "")">
+                                            <td class="text-center text-muted small">@(i == 0 ? "🥶" : (i + 1).ToString())</td>
+                                            <td class="text-primary">@rec.Temp°F</td>
+                                            <td class="small">@rec.FormattedDate</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="p-4 bg-light rounded small text-muted mt-2">
+            <strong class="text-dark">About this data</strong> &mdash;
+            Records are sourced from the
+            <a href="https://www.rcc-acis.org/" target="_blank" rel="noopener" class="text-muted">NOAA Threadex dataset via RCC ACIS</a>,
+            a quality-controlled record for long-term climate stations. Threadex adjusts for station
+            relocations and observation-time changes, making records comparable across all years since
+            <strong>@Model.PeriodOfRecordLabel</strong>.
+            Climate normals represent the 1991–2020 average.
+        </section>
+
+        </div><!-- /#tab-records -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             PRECIPITATION TAB
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div class="tab-pane fade" id="tab-precipitation" role="tabpanel">
+        @if (Model.Precip is not null)
+        {
+            var p = Model.Precip;
+            var ytdDiff  = p.YtdActual - p.YtdNormal;
+            var monDiff  = p.MonthFullNormal > 0 ? p.MonthActual - p.MonthFullNormal : (double?)null;
+            var sumDiff  = p.SummerActual.HasValue && p.SummerFullNormal.HasValue
+                           ? p.SummerActual.Value - p.SummerFullNormal.Value : (double?)null;
+            static string DiffLabel(double d) => (d >= 0 ? "+" : "") + d.ToString("F2") + "\"";
+            static string DiffCss(double d) => d >= 0.25 ? "primary" : d <= -0.25 ? "danger" : "secondary";
+
+            <section class="mb-4 pt-3">
+                <div class="row mb-3 align-items-end">
+                    <div class="col">
+                        <h2 class="h5 fw-bold mb-0">Precipitation</h2>
+                        <p class="text-muted small mb-0">Actual vs. 1991–2020 full-month and full-season normals</p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 h-100 bg-light">
+                            <div class="card-body p-3">
+                                <div class="stat-hero-temp text-primary">@p.YtdActual.ToString("F2")"</div>
+                                <div class="small fw-semibold mt-1">@currentYear YTD</div>
+                                <div class="text-muted" style="font-size:.8rem">Normal: @p.YtdNormal.ToString("F2")"</div>
+                                <span class="badge bg-@DiffCss(ytdDiff) mt-1">@DiffLabel(ytdDiff)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 h-100 bg-light">
+                            <div class="card-body p-3">
+                                <div class="stat-hero-temp text-primary">@p.MonthActual.ToString("F2")"</div>
+                                <div class="small fw-semibold mt-1">@monthName so far</div>
+                                @if (p.MonthFullNormal > 0)
+                                {
+                                    <div class="text-muted" style="font-size:.8rem">@monthName normal: @p.MonthFullNormal.ToString("F2")"</div>
+                                }
+                                @if (monDiff.HasValue)
+                                {
+                                    <span class="badge bg-@DiffCss(monDiff.Value) mt-1">@DiffLabel(monDiff.Value)</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    @if (p.SummerActual.HasValue && p.SummerFullNormal.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 bg-light">
+                                <div class="card-body p-3">
+                                    <div class="stat-hero-temp text-primary">@p.SummerActual.Value.ToString("F2")"</div>
+                                    <div class="small fw-semibold mt-1">Summer so far</div>
+                                    <div class="text-muted" style="font-size:.8rem">Summer normal: @p.SummerFullNormal.Value.ToString("F2")"</div>
+                                    @if (sumDiff.HasValue)
+                                    {
+                                        <span class="badge bg-@DiffCss(sumDiff.Value) mt-1">@DiffLabel(sumDiff.Value)</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 h-100 bg-light">
+                            <div class="card-body p-3">
+                                <div class="stat-hero-temp text-secondary">@p.CurrentYearHeavyDays</div>
+                                <div class="small fw-semibold mt-1">@currentYear heavy rain days</div>
+                                <div class="text-muted" style="font-size:.8rem">Days with ≥ 1.0"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">Monthly Precipitation — Last 24 Months</h3>
+                        <p class="text-muted small mb-3">Blue = actual · dashed line = monthly normal</p>
+                        <div class="chart-container" style="height:220px;"><canvas id="precipMonthlyChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">Annual Precipitation Per Year (1970–@currentYear)</h3>
+                        <p class="text-muted small mb-3">Blue = above average · tan = below average · gold = @currentYear (partial)</p>
+                        <div class="chart-container"><canvas id="precipAnnualChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-2">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">Heavy Rain Days Per Year (≥ 1.0")</h3>
+                        <p class="text-muted small mb-3">Even when annual totals stay similar, storms can become more intense and concentrated</p>
+                        <div class="chart-container" style="height:220px;"><canvas id="precipHeavyChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        }
+        </div><!-- /#tab-precipitation -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             WARM NIGHTS TAB
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div class="tab-pane fade" id="tab-warm-nights" role="tabpanel">
+        @if (Model.WarmNights is not null && Model.WarmNights.WarmNightsPerYear.Count > 0)
+        {
+            var wn = Model.WarmNights;
+            var isSummer = DateTime.Now.Month is >= 6 and <= 8;
+            <section class="mb-4 pt-3">
+                <div class="row mb-2 align-items-end">
+                    <div class="col">
+                        <h2 class="h5 fw-bold mb-0">Warm Summer Nights <span class="text-muted fw-normal">(Jun–Aug)</span></h2>
+                        <p class="text-muted small mb-0">Nights where the overnight low exceeded the 1991–2020 normal low</p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 h-100" style="background:#fffbea;">
+                            <div class="card-body p-3">
+                                <div class="stat-hero-temp" style="color:#d97706;">@wn.ThisSummerCount</div>
+                                <div class="small fw-semibold mt-1">@currentYear @(isSummer ? "so far" : "total")</div>
+                                <div class="text-muted" style="font-size:.8rem">above-normal nights</div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (wn.HistoricalAvg.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 bg-light">
+                                <div class="card-body p-3">
+                                    <div class="stat-hero-temp text-secondary">@wn.HistoricalAvg.Value.ToString("F1")</div>
+                                    <div class="small fw-semibold mt-1">Avg / summer</div>
+                                    <div class="text-muted" style="font-size:.8rem">1970–2020</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (wn.RecordYear.HasValue && wn.RecordCount.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 bg-light">
+                                <div class="card-body p-3">
+                                    <div class="stat-hero-temp text-danger">@wn.RecordCount</div>
+                                    <div class="small fw-semibold mt-1">Most in a summer</div>
+                                    <div class="text-muted" style="font-size:.8rem">@wn.RecordYear</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-3">Above-Normal Summer Nights Per Year</h3>
+                        <div class="chart-container"><canvas id="warmNightsChart"></canvas></div>
+                    </div>
+                </div>
+                @if (wn.AvgLowByDecade.Count > 0)
+                {
+                    <div class="card border-0 bg-light mb-2">
+                        <div class="card-body">
+                            <h3 class="h6 fw-semibold mb-1">Average June–August Low Temperature by Decade</h3>
+                            <p class="text-muted small mb-3">Decade averages of the actual overnight low</p>
+                            <div class="chart-container" style="height:200px;"><canvas id="avgLowDecadeChart"></canvas></div>
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+        </div><!-- /#tab-warm-nights -->
+
+        </div><!-- /.tab-content -->
+    }
+
+    <div class="mt-4">
+        <a href="/" class="btn btn-outline-secondary btn-sm">&larr; Back to all stations</a>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    Chart.defaults.font.family = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    Chart.defaults.font.size = 12;
+
+    // ── YTD Departure from Normal Chart ─────────────────────────────────
+    const ytdData = @Html.Raw(ytdJson);
+    const deptCtx = document.getElementById('departureChart');
+    if (deptCtx && ytdData.length > 0) {
+        const labels = ytdData.map(d => {
+            const dt = new Date(d.date + 'T00:00:00');
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        // Show every ~14th label to avoid clutter
+        const step = Math.max(1, Math.floor(ytdData.length / 18));
+        const filteredLabels = labels.map((l, i) => i % step === 0 ? l : '');
+
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: filteredLabels,
+                datasets: [{
+                    label: 'Departure from Normal (°F)',
+                    data: ytdData.map(d => d.departure),
+                    backgroundColor: ytdData.map(d =>
+                        d.departure > 0 ? 'rgba(239,68,68,0.75)' : 'rgba(59,130,246,0.75)'
+                    ),
+                    borderWidth: 0,
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => {
+                                const d = ytdData[items[0].dataIndex];
+                                return new Date(d.date + 'T00:00:00').toLocaleDateString('en-US',
+                                    { month: 'long', day: 'numeric' });
+                            },
+                            label: (item) => {
+                                const d = ytdData[item.dataIndex];
+                                const lines = [];
+                                if (d.actual != null) lines.push(`Actual: ${d.actual}°F`);
+                                if (d.normal != null) lines.push(`Normal: ${d.normal}°F`);
+                                if (d.departure != null) {
+                                    const sign = d.departure >= 0 ? '+' : '';
+                                    lines.push(`Departure: ${sign}${d.departure.toFixed(1)}°F`);
+                                }
+                                return lines;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0 } },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        ticks: { callback: v => (v >= 0 ? '+' : '') + v + '°' }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 90°F Days Per Year Chart ─────────────────────────────────────────
+    const hotData = @Html.Raw(hotDaysJson);
+    const currentYear = @currentYear;
+    const hotCtx = document.getElementById('hotDaysChart');
+    if (hotCtx && hotData.length > 0) {
+        // Exclude current year from average since it's partial
+        const completeYears = hotData.filter(d => d.year < currentYear);
+        const avg = completeYears.length
+            ? completeYears.reduce((s, d) => s + d.count, 0) / completeYears.length
+            : hotData.reduce((s, d) => s + d.count, 0) / hotData.length;
+
+        const minYear = hotData[0].year, maxYear = hotData[hotData.length - 1].year;
+        const colors = hotData.map(d => {
+            if (d.year === currentYear) return 'rgba(234,179,8,0.85)'; // gold = in progress
+            const t = (d.year - minYear) / Math.max(maxYear - minYear, 1);
+            const r = Math.round(180 + t * 75);
+            const g = Math.round(120 - t * 70);
+            return `rgba(${r},${g},60,0.8)`;
+        });
+
+        new Chart(hotCtx, {
+            type: 'bar',
+            data: {
+                labels: hotData.map(d => d.year),
+                datasets: [
+                    {
+                        label: 'Days ≥ 90°F',
+                        data: hotData.map(d => d.count),
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        borderRadius: 2,
+                        order: 2
+                    },
+                    {
+                        label: `Avg 1970–${currentYear - 1} (${avg.toFixed(0)} days)`,
+                        data: hotData.map(() => avg),
+                        type: 'line',
+                        borderColor: 'rgba(0,0,0,0.4)',
+                        borderWidth: 1.5,
+                        borderDash: [4, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 16 } },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => {
+                                const d = hotData[items[0].dataIndex];
+                                return d.year === currentYear ? `${d.year} (through yesterday)` : String(d.year);
+                            },
+                            label: (item) => item.dataset.type === 'line'
+                                ? `Avg (complete years): ${avg.toFixed(1)} days`
+                                : `${item.raw} days ≥ 90°F`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 0,
+                            callback: (val, i) => i % 5 === 0 ? hotData[i]?.year : ''
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        ticks: { stepSize: 10 }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── Lazy-init charts for non-active tabs ────────────────────────────
+    // Chart.js can't measure canvas size in display:none panes.
+    // Initialize each tab's charts the first time that tab is shown.
+    let precipInited = false;
+    let warmInited   = false;
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', e => {
+            const target = e.target.getAttribute('data-bs-target');
+            if (target === '#tab-precipitation' && !precipInited) { precipInited = true; initPrecipCharts(); }
+            if (target === '#tab-warm-nights'   && !warmInited)   { warmInited   = true; initWarmNightsCharts(); }
+        });
+    });
+
+    // ── Precipitation Charts ─────────────────────────────────────────────
+    function initPrecipCharts() {
+    const precipMonthlyData = @Html.Raw(precipMonthlyJson);
+    const precipAnnualData  = @Html.Raw(precipAnnualJson);
+    const precipHeavyData   = @Html.Raw(precipHeavyJson);
+
+    const pmCtx = document.getElementById('precipMonthlyChart');
+    if (pmCtx && precipMonthlyData.length > 0) {
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const labels = precipMonthlyData.map(d => `${monthNames[d.month-1]} ${d.year}`);
+        const colors  = precipMonthlyData.map(d =>
+            (d.actual == null || d.normal == null) ? 'rgba(156,163,175,0.6)'
+            : d.actual >= d.normal ? 'rgba(59,130,246,0.75)' : 'rgba(180,120,60,0.7)');
+        new Chart(pmCtx, {
+            type: 'bar',
+            data: { labels, datasets: [
+                { label: 'Actual', data: precipMonthlyData.map(d => d.actual),
+                  backgroundColor: colors, borderWidth: 0, borderRadius: 2, order: 2 },
+                { label: 'Normal', data: precipMonthlyData.map(d => d.normal), type: 'line',
+                  borderColor: 'rgba(0,0,0,0.35)', borderWidth: 1.5, borderDash: [4,3],
+                  pointRadius: 2, pointBackgroundColor: 'rgba(0,0,0,0.35)', fill: false, order: 1 }
+            ]},
+            options: { responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 12 } },
+                    tooltip: { callbacks: { label: item => item.dataset.type === 'line' ? `Normal: ${item.raw}"` : `Actual: ${item.raw}"` } } },
+                scales: { x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v + '"' } } } }
+        });
+    }
+
+    const paCtx = document.getElementById('precipAnnualChart');
+    if (paCtx && precipAnnualData.length > 0) {
+        const completeAnnual = precipAnnualData.filter(d => d.year < currentYear && d.normal != null);
+        const annualAvg = completeAnnual.length
+            ? completeAnnual.reduce((s, d) => s + d.actual, 0) / completeAnnual.length : null;
+        const annualColors = precipAnnualData.map(d =>
+            d.year === currentYear ? 'rgba(234,179,8,0.85)'
+            : (annualAvg == null || d.actual >= annualAvg) ? 'rgba(59,130,246,0.72)' : 'rgba(180,130,60,0.72)');
+        new Chart(paCtx, {
+            type: 'bar',
+            data: { labels: precipAnnualData.map(d => d.year), datasets: [
+                { label: 'Annual total', data: precipAnnualData.map(d => d.actual),
+                  backgroundColor: annualColors, borderWidth: 0, borderRadius: 2, order: 2 },
+                ...(annualAvg != null ? [{ label: `Avg ${annualAvg.toFixed(1)}"`, data: precipAnnualData.map(() => annualAvg),
+                    type: 'line', borderColor: 'rgba(0,0,0,0.4)', borderWidth: 1.5, borderDash: [4,4],
+                    pointRadius: 0, fill: false, order: 1 }] : [])
+            ]},
+            options: { responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 12 } },
+                    tooltip: { callbacks: {
+                        title: items => { const d = precipAnnualData[items[0].dataIndex]; return d.year === currentYear ? `${d.year} (partial)` : String(d.year); },
+                        label: item => item.dataset.type === 'line' ? `Avg: ${annualAvg?.toFixed(2)}"` : `Total: ${item.raw}"` } } },
+                scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, callback: (val, i) => i % 5 === 0 ? precipAnnualData[i]?.year : '' } },
+                    y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v + '"' } } } }
+        });
+    }
+
+    const phCtx = document.getElementById('precipHeavyChart');
+    if (phCtx && precipHeavyData.length > 0) {
+        new Chart(phCtx, {
+            type: 'bar',
+            data: { labels: precipHeavyData.map(d => d.year), datasets: [{
+                label: 'Days ≥ 1.0"', data: precipHeavyData.map(d => d.count),
+                backgroundColor: precipHeavyData.map(d => d.year === currentYear ? 'rgba(234,179,8,0.85)' : 'rgba(79,70,229,0.65)'),
+                borderWidth: 0, borderRadius: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: {
+                        title: items => { const d = precipHeavyData[items[0].dataIndex]; return d.year === currentYear ? `${d.year} (through yesterday)` : String(d.year); },
+                        label: item => `${item.raw} days with ≥ 1.0"` } } },
+                scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, callback: (val, i) => i % 5 === 0 ? precipHeavyData[i]?.year : '' } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } } } }
+        });
+    }
+    } // end initPrecipCharts
+
+    // ── Warm Nights Charts ───────────────────────────────────────────────
+    function initWarmNightsCharts() {
+    const wnData = @Html.Raw(warmNightsJson);
+    const wnHistAvg = @Html.Raw(warmNightsHistAvg);
+    const wnCtx = document.getElementById('warmNightsChart');
+    if (wnCtx && wnData.length > 0) {
+        const wnColors = wnData.map(d =>
+            d.year === currentYear ? 'rgba(234,179,8,0.85)' : 'rgba(109,40,217,0.65)');
+        new Chart(wnCtx, {
+            type: 'bar',
+            data: {
+                labels: wnData.map(d => d.year),
+                datasets: [
+                    {
+                        label: 'Above-normal nights',
+                        data: wnData.map(d => d.count),
+                        backgroundColor: wnColors,
+                        borderWidth: 0,
+                        borderRadius: 2,
+                        order: 2
+                    },
+                    ...(wnHistAvg != null ? [{
+                        label: `Avg 1970–2020 (${parseFloat(wnHistAvg).toFixed(1)} nights)`,
+                        data: wnData.map(() => wnHistAvg),
+                        type: 'line',
+                        borderColor: 'rgba(0,0,0,0.4)',
+                        borderWidth: 1.5,
+                        borderDash: [4, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1
+                    }] : [])
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 16 } },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => {
+                                const d = wnData[items[0].dataIndex];
+                                return d.year === currentYear ? `${d.year} (through yesterday)` : String(d.year);
+                            },
+                            label: (item) => item.dataset.type === 'line'
+                                ? `Avg (1970–2020): ${parseFloat(wnHistAvg).toFixed(1)} nights`
+                                : `${item.raw} above-normal nights`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxRotation: 0, callback: (val, i) => i % 5 === 0 ? wnData[i]?.year : '' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        title: { display: true, text: 'Nights above normal' }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── Avg Jun–Aug Low by Decade Chart ─────────────────────────────────
+    const decadeData = @Html.Raw(decadeJson);
+    const decadeCtx = document.getElementById('avgLowDecadeChart');
+    if (decadeCtx && decadeData.length > 0) {
+        const decadeColors = [
+            'rgba(96,165,250,0.85)',
+            'rgba(129,140,248,0.85)',
+            'rgba(167,139,250,0.85)',
+            'rgba(232,121,249,0.85)',
+            'rgba(251,113,133,0.85)',
+            'rgba(220,38,38,0.85)'
+        ];
+        new Chart(decadeCtx, {
+            type: 'bar',
+            data: {
+                labels: decadeData.map(d => d.label),
+                datasets: [{
+                    data: decadeData.map(d => d.avgLow),
+                    backgroundColor: decadeData.map((_, i) => decadeColors[i] ?? 'rgba(220,38,38,0.85)'),
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: item => `Avg Jun–Aug low: ${item.raw}°F`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        ticks: { callback: v => v + '°F' }
+                    }
+                }
+            }
+        });
+    }
+    } // end initWarmNightsCharts
+})();
+</script>
+}

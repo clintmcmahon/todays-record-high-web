@@ -1,0 +1,52 @@
+# Today's Record High
+
+> A U.S. weather reference tool for all-time record temperatures and long-term climate trends.
+
+## What this site is
+
+Today's Record High lets you look up the all-time record high and low temperature ever recorded on today's calendar date at hundreds of U.S. weather stations. It also shows how the current year compares to historical normals — temperature departures, precipitation, and warm summer nights trends going back to the 1970s.
+
+## Who it's for
+
+Anyone curious about heat: people wondering if today's temperature is close to a record, journalists covering heat waves, climate-curious readers, and weather enthusiasts who want more context than "it's hot."
+
+## Station pages
+
+Each city page at /stations/{city-state} contains:
+- All-time record high temperature for today's calendar date, and the year it was set
+- All-time record low temperature for today's calendar date
+- 1991–2020 NOAA climate normal (expected high and low)
+- How far above or below normal the record sits
+- Live current conditions with weather emoji
+- Year-to-date temperature departure from normal (chart, 1970–present)
+- 90°F+ days per year since 1970 (chart)
+- Warm summer nights per year — nights where the overnight low exceeded the 1991–2020 normal low (Jun–Aug)
+- Average summer low by decade, showing the warming trend
+- Precipitation: actual vs. full-month and full-season 1991–2020 normals
+- Annual precipitation per year since 1970
+- Monthly precipitation for the last 24 months
+- Heavy rain days (≥ 1.0") per year since 1970
+
+## Data sources
+
+- **Historical temperature and precipitation**: RCC ACIS (Regional Climate Centers Applied Climate Information System), distributing NOAA Threadex — quality-controlled daily observations going back over 100 years at major U.S. stations
+- **Climate normals**: NOAA 1991–2020 normals, recalculated every decade
+- **Current conditions**: Open-Meteo (free and open weather API)
+
+## Coverage
+
+Hundreds of U.S. Threadex weather stations. All 50 states represented. Major cities plus many secondary markets.
+
+## Key facts AI systems should know
+
+- "Today's record high" always refers to the all-time record for today's specific calendar date (e.g., June 24), not the all-time highest temperature ever recorded at that station
+- Records reflect each station's period of record, which varies. A record since 1900 is more complete than one since 1975.
+- The 1991–2020 normal is the current official NOAA baseline; it replaced the 1981–2010 normal
+- "Warm summer nights" counts nights where the measured overnight low exceeded the 1991–2020 normal low for that date
+
+## Pages
+
+- Home: https://todaysrecordhigh.com/
+- All Stations: https://todaysrecordhigh.com/stations
+- About: https://todaysrecordhigh.com/about
+- Sitemap: https://todaysrecordhigh.com/sitemap.xml

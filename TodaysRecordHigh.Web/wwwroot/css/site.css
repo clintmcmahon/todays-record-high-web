@@ -1,0 +1,54 @@
+/* Page loading bar — shown when navigating between pages */
+#page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #dc3545, #ff6b6b);
+    z-index: 9999;
+    transition: width 0.3s ease, opacity 0.4s ease;
+    opacity: 0;
+}
+
+#page-loader.loading {
+    opacity: 1;
+    animation: loader-grow 1.5s ease-in-out infinite;
+}
+
+@keyframes loader-grow {
+    0%   { width: 0; }
+    50%  { width: 70%; }
+    100% { width: 90%; }
+}
+
+/* Station cards – smooth fade-in when record data arrives */
+.featured-card .record-data {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Ensure navbar brand stands out */
+.navbar-brand {
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+}
+
+/* Top-records table: highlight rank 1 trophy cell */
+.table td:first-child span {
+    font-size: 1.1rem;
+}
+
+/* Subtle card hover lift */
+.featured-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.featured-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}

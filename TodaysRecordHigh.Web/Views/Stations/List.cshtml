@@ -1,0 +1,39 @@
+@model Dictionary<string, List<TodaysRecordHigh.Web.Models.Station>>
+
+@{
+    ViewData["Title"] = "All Stations";
+    var today = DateTime.Now.ToString("MMMM d");
+}
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2 fw-bold mb-1">All Stations</h1>
+            <p class="text-muted mb-0">@Model.Values.Sum(v => v.Count) weather stations across @Model.Count states — click any city to see today's records for @today.</p>
+        </div>
+    </div>
+
+    @foreach (var (stateName, stations) in Model)
+    {
+        <div class="mb-4">
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-2 border-bottom pb-1"
+                style="letter-spacing:.06em;">@stateName</h2>
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2">
+                @foreach (var s in stations)
+                {
+                    <div class="col">
+                        <a href="/stations/@s.Slug"
+                           class="d-block text-decoration-none text-body small py-1 px-2 rounded hover-bg"
+                           style="transition:background .15s;">@s.City</a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Head {
+<style>
+    .hover-bg:hover { background: #f1f5f9; }
+</style>
+}

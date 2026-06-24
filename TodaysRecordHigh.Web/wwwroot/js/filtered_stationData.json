@@ -1,0 +1,4352 @@
+[
+  {
+    "name": "Birmingham",
+    "city": "Birmingham",
+    "state": "AL",
+    "stateName": "Alabama",
+    "id": 32661,
+    "latitude": 33.5206824,
+    "longitude": -86.8024326,
+    "threadexSid": "BHMthr"
+  },
+  {
+    "name": "Huntsville",
+    "city": "Huntsville",
+    "state": "AL",
+    "stateName": "Alabama",
+    "id": 32752,
+    "latitude": 34.729847,
+    "longitude": -86.5859011,
+    "threadexSid": "HSVthr"
+  },
+  {
+    "name": "Montgomery",
+    "city": "Montgomery",
+    "state": "AL",
+    "stateName": "Alabama",
+    "id": 32799,
+    "latitude": 32.37742,
+    "longitude": -86.3091683,
+    "threadexSid": "MGMthr"
+  },
+  {
+    "name": "Mobile",
+    "city": "Mobile",
+    "state": "AL",
+    "stateName": "Alabama",
+    "id": 32804,
+    "latitude": 30.6972412,
+    "longitude": -88.1892334,
+    "threadexSid": "MOBthr"
+  },
+  {
+    "name": "Muscle Shoals",
+    "city": "Muscle Shoals",
+    "state": "AL",
+    "stateName": "Alabama",
+    "id": 80254,
+    "latitude": 34.7436791,
+    "longitude": -87.6532615,
+    "threadexSid": "MSLthr"
+  },
+  {
+    "name": "Kodiak",
+    "city": "Kodiak",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32637,
+    "latitude": 57.7901661,
+    "longitude": -152.4067073,
+    "threadexSid": "ADQthr"
+  },
+  {
+    "name": "King Salmon",
+    "city": "King Salmon",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32640,
+    "latitude": 58.7505385,
+    "longitude": -156.5218277,
+    "threadexSid": "AKNthr"
+  },
+  {
+    "name": "Anchorage",
+    "city": "Anchorage",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32645,
+    "latitude": 61.2163129,
+    "longitude": -149.894852,
+    "threadexSid": "ANCthr"
+  },
+  {
+    "name": "Annette",
+    "city": "Annette",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32647,
+    "latitude": 55.0616667,
+    "longitude": -131.5416667,
+    "threadexSid": "ANNthr"
+  },
+  {
+    "name": "Bethel",
+    "city": "Bethel",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32657,
+    "latitude": 60.7922222,
+    "longitude": -161.755833,
+    "threadexSid": "BETthr"
+  },
+  {
+    "name": "Delta Junction",
+    "city": "Delta Junction",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32662,
+    "latitude": 64.0373478,
+    "longitude": -145.732157,
+    "threadexSid": "BIGthr"
+  },
+  {
+    "name": "Barrow",
+    "city": "Barrow",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32673,
+    "latitude": 71.3865172,
+    "longitude": -156.4741383,
+    "threadexSid": "BRWthr"
+  },
+  {
+    "name": "Bettles",
+    "city": "Bettles",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32675,
+    "latitude": 66.9076995,
+    "longitude": -151.5343514,
+    "threadexSid": "BTTthr"
+  },
+  {
+    "name": "Cold Bay",
+    "city": "Cold Bay",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32683,
+    "latitude": 55.2071632,
+    "longitude": -162.7146533,
+    "threadexSid": "CDBthr"
+  },
+  {
+    "name": "Fairbanks",
+    "city": "Fairbanks",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32722,
+    "latitude": 64.837845,
+    "longitude": -147.716675,
+    "threadexSid": "FAIthr"
+  },
+  {
+    "name": "Gulkana",
+    "city": "Gulkana",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32736,
+    "latitude": 62.2062625,
+    "longitude": -145.4531783,
+    "threadexSid": "GKNthr"
+  },
+  {
+    "name": "Homer",
+    "city": "Homer",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32749,
+    "latitude": 59.6454064,
+    "longitude": -151.5445643,
+    "threadexSid": "HOMthr"
+  },
+  {
+    "name": "Juneau",
+    "city": "Juneau",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32772,
+    "latitude": 58.3019496,
+    "longitude": -134.419734,
+    "threadexSid": "JNUthr"
+  },
+  {
+    "name": "Mcgrath",
+    "city": "Mcgrath",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32790,
+    "latitude": 62.9563889,
+    "longitude": -155.595833,
+    "threadexSid": "MCGthr"
+  },
+  {
+    "name": "Nome",
+    "city": "Nome",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32817,
+    "latitude": 64.4975098,
+    "longitude": -165.4061701,
+    "threadexSid": "OMEthr"
+  },
+  {
+    "name": "Kotzebue",
+    "city": "Kotzebue",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32822,
+    "latitude": 66.8982057,
+    "longitude": -162.5977621,
+    "threadexSid": "OTZthr"
+  },
+  {
+    "name": "St Paul Island",
+    "city": "St Paul Island",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32863,
+    "latitude": 57.1785238,
+    "longitude": -170.2891166,
+    "threadexSid": "SNPthr"
+  },
+  {
+    "name": "Talkeetna",
+    "city": "Talkeetna",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32870,
+    "latitude": 62.267644,
+    "longitude": -150.0295288,
+    "threadexSid": "TKAthr"
+  },
+  {
+    "name": "Yakutat",
+    "city": "Yakutat",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 32886,
+    "latitude": 59.5727345,
+    "longitude": -139.5783124,
+    "threadexSid": "YAKthr"
+  },
+  {
+    "name": "Skagway",
+    "city": "Skagway",
+    "state": "AK",
+    "stateName": "Alaska",
+    "id": 80224,
+    "latitude": 59.4569715,
+    "longitude": -135.2950489,
+    "threadexSid": "AGYthr"
+  },
+  {
+    "name": "Pago Pago",
+    "city": "Pago Pago",
+    "state": "AS",
+    "stateName": "AS",
+    "id": 32975,
+    "latitude": -14.2754786,
+    "longitude": -170.7048298,
+    "threadexSid": null
+  },
+  {
+    "name": "Flagstaff",
+    "city": "Flagstaff",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 32726,
+    "latitude": 35.1987522,
+    "longitude": -111.651822,
+    "threadexSid": "FLGthr"
+  },
+  {
+    "name": "Winslow",
+    "city": "Winslow",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 32763,
+    "latitude": 35.016919,
+    "longitude": -110.7257555,
+    "threadexSid": "INWthr"
+  },
+  {
+    "name": "Phoenix",
+    "city": "Phoenix",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 32828,
+    "latitude": 33.4484367,
+    "longitude": -112.074141,
+    "threadexSid": "PHXthr"
+  },
+  {
+    "name": "Tucson",
+    "city": "Tucson",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 32878,
+    "latitude": 32.2228765,
+    "longitude": -110.974847,
+    "threadexSid": "TUSthr"
+  },
+  {
+    "name": "Yuma",
+    "city": "Yuma",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 32889,
+    "latitude": 32.723268,
+    "longitude": -114.6179954,
+    "threadexSid": "YUMthr"
+  },
+  {
+    "name": "Lake Havasu City",
+    "city": "Lake Havasu City",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 80246,
+    "latitude": 34.4775296,
+    "longitude": -114.3379972,
+    "threadexSid": "LHUthr"
+  },
+  {
+    "name": "Kingman",
+    "city": "Kingman",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 83787,
+    "latitude": 35.189443,
+    "longitude": -114.0530065,
+    "threadexSid": "IGMthr"
+  },
+  {
+    "name": "Oracle",
+    "city": "Oracle",
+    "state": "AZ",
+    "stateName": "Arizona",
+    "id": 94463,
+    "latitude": 32.6099702,
+    "longitude": -110.7651843,
+    "threadexSid": "OSPA3thr"
+  },
+  {
+    "name": "Fort Smith",
+    "city": "Fort Smith",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 32730,
+    "latitude": 35.3880338,
+    "longitude": -94.4265011,
+    "threadexSid": "FSMthr"
+  },
+  {
+    "name": "Little Rock",
+    "city": "Little Rock",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 32783,
+    "latitude": 34.7465071,
+    "longitude": -92.2896267,
+    "threadexSid": "LITthr"
+  },
+  {
+    "name": "Harrison",
+    "city": "Harrison",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 80241,
+    "latitude": 36.2297936,
+    "longitude": -93.1076765,
+    "threadexSid": "HROthr"
+  },
+  {
+    "name": "Jonesboro",
+    "city": "Jonesboro",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 80243,
+    "latitude": 35.8272257,
+    "longitude": -90.6949871,
+    "threadexSid": "JBRthr"
+  },
+  {
+    "name": "Pine Bluff",
+    "city": "Pine Bluff",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 80257,
+    "latitude": 34.2228884,
+    "longitude": -92.004334,
+    "threadexSid": "PBFthr"
+  },
+  {
+    "name": "Russellville",
+    "city": "Russellville",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 83804,
+    "latitude": 35.2784173,
+    "longitude": -93.1337856,
+    "threadexSid": "RUEthr"
+  },
+  {
+    "name": "Booneville",
+    "city": "Booneville",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 85829,
+    "latitude": 35.1403474,
+    "longitude": -93.9219333,
+    "threadexSid": "BVLA4thr"
+  },
+  {
+    "name": "Dequeen",
+    "city": "Dequeen",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 85833,
+    "latitude": 34.0983923,
+    "longitude": -94.3809849,
+    "threadexSid": "DEQthr"
+  },
+  {
+    "name": "Mount Ida",
+    "city": "Mount Ida",
+    "state": "AR",
+    "stateName": "Arkansas",
+    "id": 85849,
+    "latitude": 34.5544099,
+    "longitude": -93.6327926,
+    "threadexSid": "MWTthr"
+  },
+  {
+    "name": "Bakersfield",
+    "city": "Bakersfield",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32659,
+    "latitude": 35.3738712,
+    "longitude": -119.019463,
+    "threadexSid": "BFLthr"
+  },
+  {
+    "name": "Bishop",
+    "city": "Bishop",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32663,
+    "latitude": 37.363679,
+    "longitude": -118.39524,
+    "threadexSid": "BIHthr"
+  },
+  {
+    "name": "Los Angeles Downtown",
+    "city": "Los Angeles Downtown",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32694,
+    "latitude": 34.0569579,
+    "longitude": -118.232204,
+    "threadexSid": "CQTthr"
+  },
+  {
+    "name": "Eureka",
+    "city": "Eureka",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32712,
+    "latitude": 40.8018746,
+    "longitude": -124.1707558,
+    "threadexSid": "EKAthr"
+  },
+  {
+    "name": "Fresno",
+    "city": "Fresno",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32724,
+    "latitude": 36.7394421,
+    "longitude": -119.78483,
+    "threadexSid": "FATthr"
+  },
+  {
+    "name": "Los Angeles Airport",
+    "city": "Los Angeles Airport",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32775,
+    "latitude": 33.9421675,
+    "longitude": -118.4213591,
+    "threadexSid": "LAXthr"
+  },
+  {
+    "name": "Long Beach",
+    "city": "Long Beach",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32781,
+    "latitude": 33.7690164,
+    "longitude": -118.191604,
+    "threadexSid": "LGBthr"
+  },
+  {
+    "name": "Redding",
+    "city": "Redding",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32837,
+    "latitude": 40.5863563,
+    "longitude": -122.391675,
+    "threadexSid": "RDDthr"
+  },
+  {
+    "name": "Sacramento",
+    "city": "Sacramento",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32846,
+    "latitude": 38.5810606,
+    "longitude": -121.493895,
+    "threadexSid": "SACthr"
+  },
+  {
+    "name": "San Diego",
+    "city": "San Diego",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32847,
+    "latitude": 32.7174202,
+    "longitude": -117.162772,
+    "threadexSid": "SANthr"
+  },
+  {
+    "name": "Stockton",
+    "city": "Stockton",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32851,
+    "latitude": 37.9577016,
+    "longitude": -121.290779,
+    "threadexSid": "SCKthr"
+  },
+  {
+    "name": "San Francisco Airport",
+    "city": "San Francisco Airport",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32854,
+    "latitude": 37.622452,
+    "longitude": -122.3839894,
+    "threadexSid": "SFOthr"
+  },
+  {
+    "name": "Santa Maria",
+    "city": "Santa Maria",
+    "state": "CA",
+    "stateName": "California",
+    "id": 32862,
+    "latitude": 34.9389618,
+    "longitude": -120.4199532,
+    "threadexSid": "SMXthr"
+  },
+  {
+    "name": "Burbank Glendale Pasadena",
+    "city": "Burbank Glendale Pasadena",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80229,
+    "latitude": 34.2031726,
+    "longitude": -118.3591782,
+    "threadexSid": "BURthr"
+  },
+  {
+    "name": "Camarillo",
+    "city": "Camarillo",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80231,
+    "latitude": 34.2176371,
+    "longitude": -119.0383541,
+    "threadexSid": "CMAthr"
+  },
+  {
+    "name": "Needles",
+    "city": "Needles",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80234,
+    "latitude": 34.8383236,
+    "longitude": -114.603872,
+    "threadexSid": "EEDthr"
+  },
+  {
+    "name": "Oxnard",
+    "city": "Oxnard",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80247,
+    "latitude": 34.1976308,
+    "longitude": -119.180381,
+    "threadexSid": "LOXthr"
+  },
+  {
+    "name": "Palm Springs",
+    "city": "Palm Springs",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80262,
+    "latitude": 33.8246269,
+    "longitude": -116.540303,
+    "threadexSid": "PSPthr"
+  },
+  {
+    "name": "Riverside",
+    "city": "Riverside",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80264,
+    "latitude": 33.9824949,
+    "longitude": -117.374238,
+    "threadexSid": "RALthr"
+  },
+  {
+    "name": "Ramona",
+    "city": "Ramona",
+    "state": "CA",
+    "stateName": "California",
+    "id": 80266,
+    "latitude": 33.0472806,
+    "longitude": -116.8776005,
+    "threadexSid": "RNMthr"
+  },
+  {
+    "name": "Crescent City",
+    "city": "Crescent City",
+    "state": "CA",
+    "stateName": "California",
+    "id": 83775,
+    "latitude": 41.7522404,
+    "longitude": -124.1978539,
+    "threadexSid": "CECthr"
+  },
+  {
+    "name": "Escondido",
+    "city": "Escondido",
+    "state": "CA",
+    "stateName": "California",
+    "id": 83780,
+    "latitude": 33.1216751,
+    "longitude": -117.0814849,
+    "threadexSid": "ESCC1thr"
+  },
+  {
+    "name": "Sacramento Downtown",
+    "city": "Sacramento Downtown",
+    "state": "CA",
+    "stateName": "California",
+    "id": 83807,
+    "latitude": 38.5795383,
+    "longitude": -121.4985526,
+    "threadexSid": null
+  },
+  {
+    "name": "Tahoe City",
+    "city": "Tahoe City",
+    "state": "CA",
+    "stateName": "California",
+    "id": 83810,
+    "latitude": 39.1689372,
+    "longitude": -120.143478,
+    "threadexSid": "TAHC1thr"
+  },
+  {
+    "name": "Ukiah",
+    "city": "Ukiah",
+    "state": "CA",
+    "stateName": "California",
+    "id": 83813,
+    "latitude": 39.1501662,
+    "longitude": -123.2077861,
+    "threadexSid": "UKIthr"
+  },
+  {
+    "name": "Alturas",
+    "city": "Alturas",
+    "state": "CA",
+    "stateName": "California",
+    "id": 85826,
+    "latitude": 41.487123,
+    "longitude": -120.542327,
+    "threadexSid": "AATthr"
+  },
+  {
+    "name": "Mount Shasta",
+    "city": "Mount Shasta",
+    "state": "CA",
+    "stateName": "California",
+    "id": 85845,
+    "latitude": 41.4091977,
+    "longitude": -122.1948645,
+    "threadexSid": "MHSthr"
+  },
+  {
+    "name": "Palmdale",
+    "city": "Palmdale",
+    "state": "CA",
+    "stateName": "California",
+    "id": 85853,
+    "latitude": 34.5793131,
+    "longitude": -118.11711,
+    "threadexSid": "PMDthr"
+  },
+  {
+    "name": "Lancaster",
+    "city": "Lancaster",
+    "state": "CA",
+    "stateName": "California",
+    "id": 85855,
+    "latitude": 34.6981064,
+    "longitude": -118.1366153,
+    "threadexSid": "WJFthr"
+  },
+  {
+    "name": "El Cajon",
+    "city": "El Cajon",
+    "state": "CA",
+    "stateName": "California",
+    "id": 94454,
+    "latitude": 32.7947731,
+    "longitude": -116.962526,
+    "threadexSid": "ELJC1thr"
+  },
+  {
+    "name": "Hanford",
+    "city": "Hanford",
+    "state": "CA",
+    "stateName": "California",
+    "id": 94456,
+    "latitude": 36.3277959,
+    "longitude": -119.6461565,
+    "threadexSid": "HJOthr"
+  },
+  {
+    "name": "El Centro",
+    "city": "El Centro",
+    "state": "CA",
+    "stateName": "California",
+    "id": 94458,
+    "latitude": 32.8011724,
+    "longitude": -115.5704776,
+    "threadexSid": "IPLthr"
+  },
+  {
+    "name": "Madera",
+    "city": "Madera",
+    "state": "CA",
+    "stateName": "California",
+    "id": 94459,
+    "latitude": 37.1716264,
+    "longitude": -119.7737991,
+    "threadexSid": "MAEthr"
+  },
+  {
+    "name": "Merced",
+    "city": "Merced",
+    "state": "CA",
+    "stateName": "California",
+    "id": 94460,
+    "latitude": 37.1641544,
+    "longitude": -120.7678602,
+    "threadexSid": "MCEthr"
+  },
+  {
+    "name": "San Jose",
+    "city": "San Jose",
+    "state": "CA",
+    "stateName": "California",
+    "id": 98627,
+    "latitude": 37.3361663,
+    "longitude": -121.890591,
+    "threadexSid": "SJCthr"
+  },
+  {
+    "name": "Alamosa",
+    "city": "Alamosa",
+    "state": "CO",
+    "stateName": "Colorado",
+    "id": 32643,
+    "latitude": 37.5780995,
+    "longitude": -105.7890452,
+    "threadexSid": "ALSthr"
+  },
+  {
+    "name": "Colorado Springs",
+    "city": "Colorado Springs",
+    "state": "CO",
+    "stateName": "Colorado",
+    "id": 32691,
+    "latitude": 38.8339578,
+    "longitude": -104.825348,
+    "threadexSid": "COSthr"
+  },
+  {
+    "name": "Denver",
+    "city": "Denver",
+    "state": "CO",
+    "stateName": "Colorado",
+    "id": 32706,
+    "latitude": 39.7392364,
+    "longitude": -104.984862,
+    "threadexSid": "DENthr"
+  },
+  {
+    "name": "Grand Junction",
+    "city": "Grand Junction",
+    "state": "CO",
+    "stateName": "Colorado",
+    "id": 32735,
+    "latitude": 39.0672568,
+    "longitude": -108.56448,
+    "threadexSid": "GJTthr"
+  },
+  {
+    "name": "Pueblo",
+    "city": "Pueblo",
+    "state": "CO",
+    "stateName": "Colorado",
+    "id": 32833,
+    "latitude": 38.263995,
+    "longitude": -104.6141867,
+    "threadexSid": "PUBthr"
+  },
+  {
+    "name": "Hartford",
+    "city": "Hartford",
+    "state": "CT",
+    "stateName": "Connecticut",
+    "id": 32655,
+    "latitude": 41.764582,
+    "longitude": -72.6908547,
+    "threadexSid": "BDLthr"
+  },
+  {
+    "name": "Bridgeport",
+    "city": "Bridgeport",
+    "state": "CT",
+    "stateName": "Connecticut",
+    "id": 32656,
+    "latitude": 41.1792695,
+    "longitude": -73.1887863,
+    "threadexSid": "BDRthr"
+  },
+  {
+    "name": "Wilmington",
+    "city": "Wilmington",
+    "state": "DE",
+    "stateName": "Delaware",
+    "id": 32759,
+    "latitude": 39.7459468,
+    "longitude": -75.546589,
+    "threadexSid": "ILGthr"
+  },
+  {
+    "name": "Georgetown",
+    "city": "Georgetown",
+    "state": "DE",
+    "stateName": "Delaware",
+    "id": 83782,
+    "latitude": 38.6900507,
+    "longitude": -75.3858753,
+    "threadexSid": "GEDthr"
+  },
+  {
+    "name": "Washington",
+    "city": "Washington",
+    "state": "DC",
+    "stateName": "District of Columbia",
+    "id": 32704,
+    "latitude": 38.8950368,
+    "longitude": -77.0365427,
+    "threadexSid": "DCAthr"
+  },
+  {
+    "name": "Yap",
+    "city": "Yap",
+    "state": "FM",
+    "stateName": "FM",
+    "id": 32981,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Pohnpei",
+    "city": "Pohnpei",
+    "state": "FM",
+    "stateName": "FM",
+    "id": 32982,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Chuuk",
+    "city": "Chuuk",
+    "state": "FM",
+    "stateName": "FM",
+    "id": 32983,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Daytona Beach",
+    "city": "Daytona Beach",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32700,
+    "latitude": 29.2108147,
+    "longitude": -81.0228331,
+    "threadexSid": "DABthr"
+  },
+  {
+    "name": "Key West",
+    "city": "Key West",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32721,
+    "latitude": 24.5548262,
+    "longitude": -81.8020722,
+    "threadexSid": "EYWthr"
+  },
+  {
+    "name": "Fort Myers",
+    "city": "Fort Myers",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32727,
+    "latitude": 26.640628,
+    "longitude": -81.8723084,
+    "threadexSid": "FMYthr"
+  },
+  {
+    "name": "Gainesville",
+    "city": "Gainesville",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32739,
+    "latitude": 29.6519684,
+    "longitude": -82.3249846,
+    "threadexSid": "GNVthr"
+  },
+  {
+    "name": "Jacksonville",
+    "city": "Jacksonville",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32769,
+    "latitude": 30.3321838,
+    "longitude": -81.655651,
+    "threadexSid": "JAXthr"
+  },
+  {
+    "name": "Orlando",
+    "city": "Orlando",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32793,
+    "latitude": 28.5421109,
+    "longitude": -81.3790304,
+    "threadexSid": "MCOthr"
+  },
+  {
+    "name": "Miami",
+    "city": "Miami",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32800,
+    "latitude": 25.7741728,
+    "longitude": -80.19362,
+    "threadexSid": "MIAthr"
+  },
+  {
+    "name": "West Palm Beach",
+    "city": "West Palm Beach",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32824,
+    "latitude": 26.715364,
+    "longitude": -80.0532942,
+    "threadexSid": "PBIthr"
+  },
+  {
+    "name": "Pensacola",
+    "city": "Pensacola",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32832,
+    "latitude": 30.421309,
+    "longitude": -87.2169149,
+    "threadexSid": "PNSthr"
+  },
+  {
+    "name": "Tallahassee",
+    "city": "Tallahassee",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32871,
+    "latitude": 30.4380832,
+    "longitude": -84.2809332,
+    "threadexSid": "TLHthr"
+  },
+  {
+    "name": "Tampa",
+    "city": "Tampa",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32874,
+    "latitude": 27.9477595,
+    "longitude": -82.458444,
+    "threadexSid": "TPAthr"
+  },
+  {
+    "name": "Vero Beach",
+    "city": "Vero Beach",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 32882,
+    "latitude": 27.6387163,
+    "longitude": -80.3975399,
+    "threadexSid": "VRBthr"
+  },
+  {
+    "name": "Melbourne",
+    "city": "Melbourne",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 40910,
+    "latitude": 28.0785034,
+    "longitude": -80.6077908,
+    "threadexSid": "MLBthr"
+  },
+  {
+    "name": "Fort Lauderdale",
+    "city": "Fort Lauderdale",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 80235,
+    "latitude": 26.1223084,
+    "longitude": -80.1433786,
+    "threadexSid": "FLLthr"
+  },
+  {
+    "name": "Fort Pierce",
+    "city": "Fort Pierce",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 80236,
+    "latitude": 27.4467056,
+    "longitude": -80.3256056,
+    "threadexSid": "FPRthr"
+  },
+  {
+    "name": "Sanford",
+    "city": "Sanford",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 80268,
+    "latitude": 28.8117345,
+    "longitude": -81.2680223,
+    "threadexSid": "SFBthr"
+  },
+  {
+    "name": "Sarasota-Bradenton",
+    "city": "Sarasota-Bradenton",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 80270,
+    "latitude": 27.3959884,
+    "longitude": -82.5540742,
+    "threadexSid": "SRQthr"
+  },
+  {
+    "name": "Lakeland",
+    "city": "Lakeland",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 83789,
+    "latitude": 28.0394654,
+    "longitude": -81.9498042,
+    "threadexSid": "LALthr"
+  },
+  {
+    "name": "Leesburg",
+    "city": "Leesburg",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 83790,
+    "latitude": 28.810823,
+    "longitude": -81.8778582,
+    "threadexSid": "LEEthr"
+  },
+  {
+    "name": "Marathon",
+    "city": "Marathon",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 83796,
+    "latitude": 24.7137524,
+    "longitude": -81.0903512,
+    "threadexSid": "MTHthr"
+  },
+  {
+    "name": "Punta Gorda",
+    "city": "Punta Gorda",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 83800,
+    "latitude": 26.9351529,
+    "longitude": -82.0512058,
+    "threadexSid": "PGDthr"
+  },
+  {
+    "name": "Brooksville",
+    "city": "Brooksville",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 85828,
+    "latitude": 28.5552719,
+    "longitude": -82.3878709,
+    "threadexSid": "BKVthr"
+  },
+  {
+    "name": "Winter Haven",
+    "city": "Winter Haven",
+    "state": "FL",
+    "stateName": "Florida",
+    "id": 85836,
+    "latitude": 28.0222435,
+    "longitude": -81.7328568,
+    "threadexSid": "GIFthr"
+  },
+  {
+    "name": "Augusta",
+    "city": "Augusta",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32638,
+    "latitude": 33.4709714,
+    "longitude": -81.9748429,
+    "threadexSid": "AGSthr"
+  },
+  {
+    "name": "Athens",
+    "city": "Athens",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32639,
+    "latitude": 33.9597677,
+    "longitude": -83.376398,
+    "threadexSid": "AHNthr"
+  },
+  {
+    "name": "Atlanta",
+    "city": "Atlanta",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32650,
+    "latitude": 33.7489924,
+    "longitude": -84.3902644,
+    "threadexSid": "ATLthr"
+  },
+  {
+    "name": "Columbus",
+    "city": "Columbus",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32697,
+    "latitude": 32.4610708,
+    "longitude": -84.9880449,
+    "threadexSid": "CSGthr"
+  },
+  {
+    "name": "Macon",
+    "city": "Macon",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32792,
+    "latitude": 32.8406946,
+    "longitude": -83.6324022,
+    "threadexSid": "MCNthr"
+  },
+  {
+    "name": "Savannah",
+    "city": "Savannah",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 32849,
+    "latitude": 32.0790074,
+    "longitude": -81.0921335,
+    "threadexSid": "SAVthr"
+  },
+  {
+    "name": "Albany",
+    "city": "Albany",
+    "state": "GA",
+    "stateName": "Georgia",
+    "id": 94474,
+    "latitude": 31.5782062,
+    "longitude": -84.1556809,
+    "threadexSid": "ABYthr"
+  },
+  {
+    "name": "Guam",
+    "city": "Guam",
+    "state": "GU",
+    "stateName": "GU",
+    "id": 32746,
+    "latitude": 13.4501175,
+    "longitude": 144.7577088,
+    "threadexSid": null
+  },
+  {
+    "name": "Honolulu",
+    "city": "Honolulu",
+    "state": "HI",
+    "stateName": "Hawaii",
+    "id": 32748,
+    "latitude": 21.304547,
+    "longitude": -157.855676,
+    "threadexSid": "HNLthr"
+  },
+  {
+    "name": "Hilo",
+    "city": "Hilo",
+    "state": "HI",
+    "stateName": "Hawaii",
+    "id": 32767,
+    "latitude": 19.7073734,
+    "longitude": -155.08158,
+    "threadexSid": "ITOthr"
+  },
+  {
+    "name": "Lihue",
+    "city": "Lihue",
+    "state": "HI",
+    "stateName": "Hawaii",
+    "id": 32782,
+    "latitude": 21.9769622,
+    "longitude": -159.3687721,
+    "threadexSid": "LIHthr"
+  },
+  {
+    "name": "Kahului",
+    "city": "Kahului",
+    "state": "HI",
+    "stateName": "Hawaii",
+    "id": 32813,
+    "latitude": 20.8894101,
+    "longitude": -156.4727118,
+    "threadexSid": "OGGthr"
+  },
+  {
+    "name": "Boise",
+    "city": "Boise",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 32669,
+    "latitude": 43.6166163,
+    "longitude": -116.200886,
+    "threadexSid": "BOIthr"
+  },
+  {
+    "name": "Lewiston",
+    "city": "Lewiston",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 32787,
+    "latitude": 46.4195913,
+    "longitude": -117.0216144,
+    "threadexSid": "LWSthr"
+  },
+  {
+    "name": "Pocatello",
+    "city": "Pocatello",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 32830,
+    "latitude": 42.8620287,
+    "longitude": -112.450627,
+    "threadexSid": "PIHthr"
+  },
+  {
+    "name": "McCall",
+    "city": "McCall",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 80255,
+    "latitude": 44.9110458,
+    "longitude": -116.098281,
+    "threadexSid": "MYLthr"
+  },
+  {
+    "name": "Burley",
+    "city": "Burley",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 83774,
+    "latitude": 42.5357428,
+    "longitude": -113.792794,
+    "threadexSid": "BYIthr"
+  },
+  {
+    "name": "Salmon",
+    "city": "Salmon",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 83806,
+    "latitude": 45.1759213,
+    "longitude": -113.895773,
+    "threadexSid": "SLNI1thr"
+  },
+  {
+    "name": "Stanley",
+    "city": "Stanley",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 83808,
+    "latitude": 44.2161414,
+    "longitude": -114.9378523,
+    "threadexSid": "SNTthr"
+  },
+  {
+    "name": "American Falls",
+    "city": "American Falls",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 85827,
+    "latitude": 42.7860227,
+    "longitude": -112.854437,
+    "threadexSid": "AFLI1thr"
+  },
+  {
+    "name": "Jerome",
+    "city": "Jerome",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 85840,
+    "latitude": 42.702266,
+    "longitude": -114.286704,
+    "threadexSid": "JERthr"
+  },
+  {
+    "name": "Challis",
+    "city": "Challis",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 85842,
+    "latitude": 44.5051319,
+    "longitude": -114.23137,
+    "threadexSid": "LLJthr"
+  },
+  {
+    "name": "Dworshak",
+    "city": "Dworshak",
+    "state": "ID",
+    "stateName": "Idaho",
+    "id": 94453,
+    "latitude": 46.5154194,
+    "longitude": -116.2973776,
+    "threadexSid": "DWRI1thr"
+  },
+  {
+    "name": "Moline",
+    "city": "Moline",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 32803,
+    "latitude": 41.5058344,
+    "longitude": -90.5136642,
+    "threadexSid": "MLIthr"
+  },
+  {
+    "name": "Chicago",
+    "city": "Chicago",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 32819,
+    "latitude": 41.8755616,
+    "longitude": -87.6244212,
+    "threadexSid": "ORDthr"
+  },
+  {
+    "name": "Peoria",
+    "city": "Peoria",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 32829,
+    "latitude": 40.6938609,
+    "longitude": -89.5891008,
+    "threadexSid": "PIAthr"
+  },
+  {
+    "name": "Rockford",
+    "city": "Rockford",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 32839,
+    "latitude": 42.2713945,
+    "longitude": -89.093966,
+    "threadexSid": "RFDthr"
+  },
+  {
+    "name": "Springfield",
+    "city": "Springfield",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 32864,
+    "latitude": 39.7990175,
+    "longitude": -89.6439575,
+    "threadexSid": "SPIthr"
+  },
+  {
+    "name": "Quincy",
+    "city": "Quincy",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 80272,
+    "latitude": 39.9356016,
+    "longitude": -91.4098727,
+    "threadexSid": "UINthr"
+  },
+  {
+    "name": "Carbondale",
+    "city": "Carbondale",
+    "state": "IL",
+    "stateName": "Illinois",
+    "id": 85844,
+    "latitude": 37.7274692,
+    "longitude": -89.216655,
+    "threadexSid": "MDHthr"
+  },
+  {
+    "name": "Evansville",
+    "city": "Evansville",
+    "state": "IN",
+    "stateName": "Indiana",
+    "id": 32719,
+    "latitude": 37.970495,
+    "longitude": -87.5715641,
+    "threadexSid": "EVVthr"
+  },
+  {
+    "name": "Fort Wayne",
+    "city": "Fort Wayne",
+    "state": "IN",
+    "stateName": "Indiana",
+    "id": 32731,
+    "latitude": 41.0799898,
+    "longitude": -85.1386015,
+    "threadexSid": "FWAthr"
+  },
+  {
+    "name": "Indianapolis",
+    "city": "Indianapolis",
+    "state": "IN",
+    "stateName": "Indiana",
+    "id": 32761,
+    "latitude": 39.7683331,
+    "longitude": -86.1583502,
+    "threadexSid": "INDthr"
+  },
+  {
+    "name": "South Bend",
+    "city": "South Bend",
+    "state": "IN",
+    "stateName": "Indiana",
+    "id": 32850,
+    "latitude": 41.6833813,
+    "longitude": -86.2500066,
+    "threadexSid": "SBNthr"
+  },
+  {
+    "name": "Waterloo",
+    "city": "Waterloo",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 32642,
+    "latitude": 42.498275,
+    "longitude": -92.3328743,
+    "threadexSid": "ALOthr"
+  },
+  {
+    "name": "Dubuque",
+    "city": "Dubuque",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 32703,
+    "latitude": 42.5006243,
+    "longitude": -90.6647985,
+    "threadexSid": "DBQthr"
+  },
+  {
+    "name": "Des Moines",
+    "city": "Des Moines",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 32710,
+    "latitude": 41.5868654,
+    "longitude": -93.6249494,
+    "threadexSid": "DSMthr"
+  },
+  {
+    "name": "Sioux City",
+    "city": "Sioux City",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 32868,
+    "latitude": 42.4966815,
+    "longitude": -96.4058782,
+    "threadexSid": "SUXthr"
+  },
+  {
+    "name": "Spencer",
+    "city": "Spencer",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 80269,
+    "latitude": 43.1415519,
+    "longitude": -95.1477536,
+    "threadexSid": "SPWthr"
+  },
+  {
+    "name": "Cedar Rapids",
+    "city": "Cedar Rapids",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 83776,
+    "latitude": 41.9758872,
+    "longitude": -91.6704053,
+    "threadexSid": "CIDthr"
+  },
+  {
+    "name": "Burlington",
+    "city": "Burlington",
+    "state": "IA",
+    "stateName": "Iowa",
+    "id": 94449,
+    "latitude": 40.8126922,
+    "longitude": -91.1020205,
+    "threadexSid": "BRLthr"
+  },
+  {
+    "name": "Concordia",
+    "city": "Concordia",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 32689,
+    "latitude": 39.571543,
+    "longitude": -97.661141,
+    "threadexSid": "CNKthr"
+  },
+  {
+    "name": "Dodge City",
+    "city": "Dodge City",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 32705,
+    "latitude": 37.7527982,
+    "longitude": -100.0170787,
+    "threadexSid": "DDCthr"
+  },
+  {
+    "name": "Goodland",
+    "city": "Goodland",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 32737,
+    "latitude": 39.350833,
+    "longitude": -101.710172,
+    "threadexSid": "GLDthr"
+  },
+  {
+    "name": "Wichita",
+    "city": "Wichita",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 32758,
+    "latitude": 37.6922361,
+    "longitude": -97.3375448,
+    "threadexSid": "ICTthr"
+  },
+  {
+    "name": "Topeka",
+    "city": "Topeka",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 32873,
+    "latitude": 39.049011,
+    "longitude": -95.677556,
+    "threadexSid": "TOPthr"
+  },
+  {
+    "name": "Salina",
+    "city": "Salina",
+    "state": "KS",
+    "stateName": "Kansas",
+    "id": 35081,
+    "latitude": 38.8402805,
+    "longitude": -97.6114237,
+    "threadexSid": "SLNthr"
+  },
+  {
+    "name": "Jackson",
+    "city": "Jackson",
+    "state": "KY",
+    "stateName": "Kentucky",
+    "id": 32771,
+    "latitude": 37.4200233,
+    "longitude": -83.9913882,
+    "threadexSid": "JKLthr"
+  },
+  {
+    "name": "Lexington",
+    "city": "Lexington",
+    "state": "KY",
+    "stateName": "Kentucky",
+    "id": 32779,
+    "latitude": 38.0464066,
+    "longitude": -84.4970393,
+    "threadexSid": "LEXthr"
+  },
+  {
+    "name": "Paducah",
+    "city": "Paducah",
+    "state": "KY",
+    "stateName": "Kentucky",
+    "id": 32823,
+    "latitude": 37.0833893,
+    "longitude": -88.6000478,
+    "threadexSid": "PAHthr"
+  },
+  {
+    "name": "Louisville",
+    "city": "Louisville",
+    "state": "KY",
+    "stateName": "Kentucky",
+    "id": 32852,
+    "latitude": 38.2542376,
+    "longitude": -85.759407,
+    "threadexSid": "SDFthr"
+  },
+  {
+    "name": "Baton Rouge",
+    "city": "Baton Rouge",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 32674,
+    "latitude": 30.4494155,
+    "longitude": -91.1869659,
+    "threadexSid": "BTRthr"
+  },
+  {
+    "name": "Lake Charles",
+    "city": "Lake Charles",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 32778,
+    "latitude": 30.2305095,
+    "longitude": -93.2169807,
+    "threadexSid": "LCHthr"
+  },
+  {
+    "name": "New Orleans",
+    "city": "New Orleans",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 32810,
+    "latitude": 29.9759983,
+    "longitude": -90.0782127,
+    "threadexSid": "MSYthr"
+  },
+  {
+    "name": "Shreveport",
+    "city": "Shreveport",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 32857,
+    "latitude": 32.5135356,
+    "longitude": -93.7477839,
+    "threadexSid": "SHVthr"
+  },
+  {
+    "name": "Monroe",
+    "city": "Monroe",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 80253,
+    "latitude": 32.5025471,
+    "longitude": -92.116219,
+    "threadexSid": "MLUthr"
+  },
+  {
+    "name": "Natchitoches",
+    "city": "Natchitoches",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 83786,
+    "latitude": 31.7606732,
+    "longitude": -93.0860209,
+    "threadexSid": "ICHL1thr"
+  },
+  {
+    "name": "Tallulah-Vicksburg",
+    "city": "Tallulah-Vicksburg",
+    "state": "LA",
+    "stateName": "Louisiana",
+    "id": 83811,
+    "latitude": 32.3516032,
+    "longitude": -91.0269799,
+    "threadexSid": "TVRthr"
+  },
+  {
+    "name": "Caribou",
+    "city": "Caribou",
+    "state": "ME",
+    "stateName": "Maine",
+    "id": 32682,
+    "latitude": 46.8606301,
+    "longitude": -68.0116807,
+    "threadexSid": "CARthr"
+  },
+  {
+    "name": "Portland",
+    "city": "Portland",
+    "state": "ME",
+    "stateName": "Maine",
+    "id": 32835,
+    "latitude": 43.6573605,
+    "longitude": -70.2586618,
+    "threadexSid": "PWMthr"
+  },
+  {
+    "name": "Bangor",
+    "city": "Bangor",
+    "state": "ME",
+    "stateName": "Maine",
+    "id": 35079,
+    "latitude": 44.8016255,
+    "longitude": -68.7713289,
+    "threadexSid": "BGRthr"
+  },
+  {
+    "name": "Millinocket",
+    "city": "Millinocket",
+    "state": "ME",
+    "stateName": "Maine",
+    "id": 80252,
+    "latitude": 45.6565049,
+    "longitude": -68.7091349,
+    "threadexSid": "MLTthr"
+  },
+  {
+    "name": "Majuro",
+    "city": "Majuro",
+    "state": "MH",
+    "stateName": "MH",
+    "id": 32976,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Kwajalein",
+    "city": "Kwajalein",
+    "state": "MH",
+    "stateName": "MH",
+    "id": 32977,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Baltimore",
+    "city": "Baltimore",
+    "state": "MD",
+    "stateName": "Maryland",
+    "id": 32678,
+    "latitude": 39.2908816,
+    "longitude": -76.610759,
+    "threadexSid": "BWIthr"
+  },
+  {
+    "name": "Salisbury",
+    "city": "Salisbury",
+    "state": "MD",
+    "stateName": "Maryland",
+    "id": 80267,
+    "latitude": 38.366027,
+    "longitude": -75.6009964,
+    "threadexSid": "SBYthr"
+  },
+  {
+    "name": "Baltimore Downtown",
+    "city": "Baltimore Downtown",
+    "state": "MD",
+    "stateName": "Maryland",
+    "id": 85834,
+    "latitude": 39.2877017,
+    "longitude": -76.6064893,
+    "threadexSid": "DMHthr"
+  },
+  {
+    "name": "Hagerstown",
+    "city": "Hagerstown",
+    "state": "MD",
+    "stateName": "Maryland",
+    "id": 85838,
+    "latitude": 39.6430455,
+    "longitude": -77.7191081,
+    "threadexSid": "HGRthr"
+  },
+  {
+    "name": "Annapolis",
+    "city": "Annapolis",
+    "state": "MD",
+    "stateName": "Maryland",
+    "id": 85850,
+    "latitude": 38.9786401,
+    "longitude": -76.492786,
+    "threadexSid": "NAKthr"
+  },
+  {
+    "name": "Boston",
+    "city": "Boston",
+    "state": "MA",
+    "stateName": "Massachusetts",
+    "id": 32670,
+    "latitude": 42.3554334,
+    "longitude": -71.060511,
+    "threadexSid": "BOSthr"
+  },
+  {
+    "name": "Milton",
+    "city": "Milton",
+    "state": "MA",
+    "stateName": "Massachusetts",
+    "id": 32805,
+    "latitude": 42.2501425,
+    "longitude": -71.065573,
+    "threadexSid": "MQEthr"
+  },
+  {
+    "name": "Worcester",
+    "city": "Worcester",
+    "state": "MA",
+    "stateName": "Massachusetts",
+    "id": 32821,
+    "latitude": 42.2625621,
+    "longitude": -71.8018877,
+    "threadexSid": "ORHthr"
+  },
+  {
+    "name": "Westfield",
+    "city": "Westfield",
+    "state": "MA",
+    "stateName": "Massachusetts",
+    "id": 83769,
+    "latitude": 42.1205411,
+    "longitude": -72.7489158,
+    "threadexSid": "BAFthr"
+  },
+  {
+    "name": "Sault Ste Marie",
+    "city": "Sault Ste Marie",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32646,
+    "latitude": 46.4976734,
+    "longitude": -84.3476583,
+    "threadexSid": "ANJthr"
+  },
+  {
+    "name": "Alpena",
+    "city": "Alpena",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32648,
+    "latitude": 45.0176181,
+    "longitude": -83.6670019,
+    "threadexSid": "APNthr"
+  },
+  {
+    "name": "Detroit",
+    "city": "Detroit",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32711,
+    "latitude": 42.3315509,
+    "longitude": -83.0466403,
+    "threadexSid": "DTWthr"
+  },
+  {
+    "name": "Flint",
+    "city": "Flint",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32728,
+    "latitude": 43.0161693,
+    "longitude": -83.6900211,
+    "threadexSid": "FNTthr"
+  },
+  {
+    "name": "Grand Rapids",
+    "city": "Grand Rapids",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32742,
+    "latitude": 42.9632425,
+    "longitude": -85.6678639,
+    "threadexSid": "GRRthr"
+  },
+  {
+    "name": "Houghton Lake",
+    "city": "Houghton Lake",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32753,
+    "latitude": 44.314739,
+    "longitude": -84.7647496,
+    "threadexSid": "HTLthr"
+  },
+  {
+    "name": "Lansing",
+    "city": "Lansing",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32773,
+    "latitude": 42.7338254,
+    "longitude": -84.5546295,
+    "threadexSid": "LANthr"
+  },
+  {
+    "name": "Muskegon",
+    "city": "Muskegon",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32802,
+    "latitude": 43.2341813,
+    "longitude": -86.2483921,
+    "threadexSid": "MKGthr"
+  },
+  {
+    "name": "Marquette County",
+    "city": "Marquette County",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 32806,
+    "latitude": 46.4481521,
+    "longitude": -87.6305899,
+    "threadexSid": "MQTthr"
+  },
+  {
+    "name": "Saginaw",
+    "city": "Saginaw",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 80248,
+    "latitude": 43.4200387,
+    "longitude": -83.9490365,
+    "threadexSid": "MBSthr"
+  },
+  {
+    "name": "Kalamazoo",
+    "city": "Kalamazoo",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 83768,
+    "latitude": 42.291707,
+    "longitude": -85.5872286,
+    "threadexSid": "AZOthr"
+  },
+  {
+    "name": "Holland",
+    "city": "Holland",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 94447,
+    "latitude": 42.7876022,
+    "longitude": -86.1090828,
+    "threadexSid": "BIVthr"
+  },
+  {
+    "name": "Battle Creek",
+    "city": "Battle Creek",
+    "state": "MI",
+    "stateName": "Michigan",
+    "id": 94450,
+    "latitude": 42.3192548,
+    "longitude": -85.1824269,
+    "threadexSid": "BTLthr"
+  },
+  {
+    "name": "THORHULT",
+    "city": "THORHULT",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 10627,
+    "latitude": 48.2302426,
+    "longitude": -95.2480451,
+    "threadexSid": null
+  },
+  {
+    "name": "Duluth",
+    "city": "Duluth",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 32708,
+    "latitude": 46.7729322,
+    "longitude": -92.1251218,
+    "threadexSid": "DLHthr"
+  },
+  {
+    "name": "International Falls",
+    "city": "International Falls",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 32762,
+    "latitude": 48.601033,
+    "longitude": -93.4105904,
+    "threadexSid": "INLthr"
+  },
+  {
+    "name": "Minneapolis-St Paul",
+    "city": "Minneapolis-St Paul",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 32809,
+    "latitude": 44.8780191,
+    "longitude": -93.2209281,
+    "threadexSid": "MSPthr"
+  },
+  {
+    "name": "Rochester",
+    "city": "Rochester",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 32845,
+    "latitude": 44.0234387,
+    "longitude": -92.4630182,
+    "threadexSid": "RSTthr"
+  },
+  {
+    "name": "Saint Cloud",
+    "city": "Saint Cloud",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 32866,
+    "latitude": 45.5616075,
+    "longitude": -94.1642004,
+    "threadexSid": "STCthr"
+  },
+  {
+    "name": "Brainerd",
+    "city": "Brainerd",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 80228,
+    "latitude": 46.3580221,
+    "longitude": -94.2008288,
+    "threadexSid": "BRDthr"
+  },
+  {
+    "name": "Hibbing",
+    "city": "Hibbing",
+    "state": "MN",
+    "stateName": "Minnesota",
+    "id": 80238,
+    "latitude": 47.427155,
+    "longitude": -92.937689,
+    "threadexSid": "HIBthr"
+  },
+  {
+    "name": "Jackson",
+    "city": "Jackson",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 32768,
+    "latitude": 32.2998686,
+    "longitude": -90.1830408,
+    "threadexSid": "JANthr"
+  },
+  {
+    "name": "Meridian",
+    "city": "Meridian",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 32795,
+    "latitude": 32.3643098,
+    "longitude": -88.703656,
+    "threadexSid": "MEIthr"
+  },
+  {
+    "name": "Tupelo",
+    "city": "Tupelo",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 32877,
+    "latitude": 34.2576067,
+    "longitude": -88.7033859,
+    "threadexSid": "TUPthr"
+  },
+  {
+    "name": "Greenville",
+    "city": "Greenville",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 80237,
+    "latitude": 33.4111051,
+    "longitude": -91.0635857,
+    "threadexSid": "GLHthr"
+  },
+  {
+    "name": "Columbus",
+    "city": "Columbus",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 83778,
+    "latitude": 33.4956744,
+    "longitude": -88.4272627,
+    "threadexSid": "CUSM6thr"
+  },
+  {
+    "name": "Gulfport",
+    "city": "Gulfport",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 83784,
+    "latitude": 30.3674198,
+    "longitude": -89.0928155,
+    "threadexSid": "GPTthr"
+  },
+  {
+    "name": "Hattiesburg",
+    "city": "Hattiesburg",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 83785,
+    "latitude": 31.3271189,
+    "longitude": -89.2903392,
+    "threadexSid": "HBGthr"
+  },
+  {
+    "name": "Greenwood",
+    "city": "Greenwood",
+    "state": "MS",
+    "stateName": "Mississippi",
+    "id": 85837,
+    "latitude": 33.5162315,
+    "longitude": -90.1795281,
+    "threadexSid": "GWOthr"
+  },
+  {
+    "name": "Columbia",
+    "city": "Columbia",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 32692,
+    "latitude": 38.951883,
+    "longitude": -92.3337366,
+    "threadexSid": "COUthr"
+  },
+  {
+    "name": "Kansas City",
+    "city": "Kansas City",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 32791,
+    "latitude": 39.100105,
+    "longitude": -94.5781416,
+    "threadexSid": "MCIthr"
+  },
+  {
+    "name": "Springfield",
+    "city": "Springfield",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 32855,
+    "latitude": 37.2081729,
+    "longitude": -93.2922715,
+    "threadexSid": "SGFthr"
+  },
+  {
+    "name": "St Louis",
+    "city": "St Louis",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 32867,
+    "latitude": 38.6280278,
+    "longitude": -90.1910154,
+    "threadexSid": "STLthr"
+  },
+  {
+    "name": "Jefferson City",
+    "city": "Jefferson City",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 83788,
+    "latitude": 38.577359,
+    "longitude": -92.1724265,
+    "threadexSid": "JEFthr"
+  },
+  {
+    "name": "Poplar Bluff",
+    "city": "Poplar Bluff",
+    "state": "MO",
+    "stateName": "Missouri",
+    "id": 85854,
+    "latitude": 36.7563166,
+    "longitude": -90.3944869,
+    "threadexSid": "POFthr"
+  },
+  {
+    "name": "Billings",
+    "city": "Billings",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32664,
+    "latitude": 45.7874957,
+    "longitude": -108.49607,
+    "threadexSid": "BILthr"
+  },
+  {
+    "name": "Kalispell",
+    "city": "Kalispell",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32725,
+    "latitude": 48.202158,
+    "longitude": -114.315321,
+    "threadexSid": "FCAthr"
+  },
+  {
+    "name": "Glasgow",
+    "city": "Glasgow",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32734,
+    "latitude": 48.1955915,
+    "longitude": -106.635556,
+    "threadexSid": "GGWthr"
+  },
+  {
+    "name": "Great Falls",
+    "city": "Great Falls",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32745,
+    "latitude": 47.5048851,
+    "longitude": -111.29189,
+    "threadexSid": "GTFthr"
+  },
+  {
+    "name": "Helena",
+    "city": "Helena",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32747,
+    "latitude": 46.5927425,
+    "longitude": -112.036277,
+    "threadexSid": "HLNthr"
+  },
+  {
+    "name": "Havre",
+    "city": "Havre",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32755,
+    "latitude": 48.5536972,
+    "longitude": -109.677802,
+    "threadexSid": "HVRthr"
+  },
+  {
+    "name": "Missoula",
+    "city": "Missoula",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 32808,
+    "latitude": 46.8701049,
+    "longitude": -113.995267,
+    "threadexSid": "MSOthr"
+  },
+  {
+    "name": "Deer Lodge",
+    "city": "Deer Lodge",
+    "state": "MT",
+    "stateName": "Montana",
+    "id": 94452,
+    "latitude": 46.0753795,
+    "longitude": -113.089332,
+    "threadexSid": "DERM8thr"
+  },
+  {
+    "name": "Scottsbluff",
+    "city": "Scottsbluff",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32658,
+    "latitude": 41.862302,
+    "longitude": -103.6627088,
+    "threadexSid": "BFFthr"
+  },
+  {
+    "name": "Grand Island",
+    "city": "Grand Island",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32741,
+    "latitude": 40.924271,
+    "longitude": -98.338685,
+    "threadexSid": "GRIthr"
+  },
+  {
+    "name": "North Platte",
+    "city": "North Platte",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32777,
+    "latitude": 41.1238873,
+    "longitude": -100.7654232,
+    "threadexSid": "LBFthr"
+  },
+  {
+    "name": "Lincoln",
+    "city": "Lincoln",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32785,
+    "latitude": 40.8088861,
+    "longitude": -96.7077751,
+    "threadexSid": "LNKthr"
+  },
+  {
+    "name": "Norfolk",
+    "city": "Norfolk",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32812,
+    "latitude": 42.0283379,
+    "longitude": -97.4169964,
+    "threadexSid": "OFKthr"
+  },
+  {
+    "name": "Omaha",
+    "city": "Omaha",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32816,
+    "latitude": 41.2587459,
+    "longitude": -95.9383758,
+    "threadexSid": "OMAthr"
+  },
+  {
+    "name": "Valentine",
+    "city": "Valentine",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 32883,
+    "latitude": 42.8746752,
+    "longitude": -100.5506158,
+    "threadexSid": "VTNthr"
+  },
+  {
+    "name": "Hastings",
+    "city": "Hastings",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 80239,
+    "latitude": 40.5861322,
+    "longitude": -98.3898883,
+    "threadexSid": "HSIthr"
+  },
+  {
+    "name": "McCook",
+    "city": "McCook",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 83793,
+    "latitude": 40.2006859,
+    "longitude": -100.6257666,
+    "threadexSid": "MCKthr"
+  },
+  {
+    "name": "Ord",
+    "city": "Ord",
+    "state": "NE",
+    "stateName": "Nebraska",
+    "id": 94462,
+    "latitude": 41.6033379,
+    "longitude": -98.9262134,
+    "threadexSid": "ORDN1thr"
+  },
+  {
+    "name": "SOUTH FORK STATE RECREATION AREA",
+    "city": "SOUTH FORK STATE RECREATION AREA",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 18289,
+    "latitude": 40.6570677,
+    "longitude": -115.7450984,
+    "threadexSid": null
+  },
+  {
+    "name": "Elko",
+    "city": "Elko",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 32714,
+    "latitude": 41.1958128,
+    "longitude": -115.3272864,
+    "threadexSid": "EKOthr"
+  },
+  {
+    "name": "Ely",
+    "city": "Ely",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 32716,
+    "latitude": 39.2480588,
+    "longitude": -114.891718,
+    "threadexSid": "ELYthr"
+  },
+  {
+    "name": "Las Vegas",
+    "city": "Las Vegas",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 32774,
+    "latitude": 36.1672719,
+    "longitude": -115.1483538,
+    "threadexSid": "LASthr"
+  },
+  {
+    "name": "Reno",
+    "city": "Reno",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 32841,
+    "latitude": 39.5261206,
+    "longitude": -119.8126581,
+    "threadexSid": "RNOthr"
+  },
+  {
+    "name": "Winnemucca",
+    "city": "Winnemucca",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 32885,
+    "latitude": 40.9724295,
+    "longitude": -117.734802,
+    "threadexSid": "WMCthr"
+  },
+  {
+    "name": "MT ROSE SKI AREA",
+    "city": "MT ROSE SKI AREA",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 67636,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Eureka",
+    "city": "Eureka",
+    "state": "NV",
+    "stateName": "Nevada",
+    "id": 94464,
+    "latitude": 39.9497613,
+    "longitude": -116.2884505,
+    "threadexSid": "P68thr"
+  },
+  {
+    "name": "Concord",
+    "city": "Concord",
+    "state": "NH",
+    "stateName": "New Hampshire",
+    "id": 32690,
+    "latitude": 43.207178,
+    "longitude": -71.537476,
+    "threadexSid": "CONthr"
+  },
+  {
+    "name": "Manchester",
+    "city": "Manchester",
+    "state": "NH",
+    "stateName": "New Hampshire",
+    "id": 80251,
+    "latitude": 42.9956397,
+    "longitude": -71.4547891,
+    "threadexSid": "MHTthr"
+  },
+  {
+    "name": "Atlantic City",
+    "city": "Atlantic City",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 32636,
+    "latitude": 39.3642852,
+    "longitude": -74.4229351,
+    "threadexSid": "ACYthr"
+  },
+  {
+    "name": "Newark",
+    "city": "Newark",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 32720,
+    "latitude": 40.735657,
+    "longitude": -74.1723667,
+    "threadexSid": "EWRthr"
+  },
+  {
+    "name": "Trenton",
+    "city": "Trenton",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 80271,
+    "latitude": 40.2203074,
+    "longitude": -74.7659,
+    "threadexSid": "TTNthr"
+  },
+  {
+    "name": "Belvidere",
+    "city": "Belvidere",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 83770,
+    "latitude": 40.8299357,
+    "longitude": -75.0782702,
+    "threadexSid": "BELN4thr"
+  },
+  {
+    "name": "New Brunswick",
+    "city": "New Brunswick",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 83797,
+    "latitude": 40.4951365,
+    "longitude": -74.4439254,
+    "threadexSid": "NBRN4thr"
+  },
+  {
+    "name": "Atlantic City Marina",
+    "city": "Atlantic City Marina",
+    "state": "NJ",
+    "stateName": "New Jersey",
+    "id": 85824,
+    "latitude": 39.3796356,
+    "longitude": -74.4279961,
+    "threadexSid": "55Nthr"
+  },
+  {
+    "name": "LA MADERA SKI AREA",
+    "city": "LA MADERA SKI AREA",
+    "state": "NM",
+    "stateName": "New Mexico",
+    "id": 19406,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "THOREAU",
+    "city": "THOREAU",
+    "state": "NM",
+    "stateName": "New Mexico",
+    "id": 19438,
+    "latitude": 35.4235532,
+    "longitude": -108.2242564,
+    "threadexSid": null
+  },
+  {
+    "name": "Albuquerque",
+    "city": "Albuquerque",
+    "state": "NM",
+    "stateName": "New Mexico",
+    "id": 32633,
+    "latitude": 35.0841034,
+    "longitude": -106.650985,
+    "threadexSid": "ABQthr"
+  },
+  {
+    "name": "Clayton",
+    "city": "Clayton",
+    "state": "NM",
+    "stateName": "New Mexico",
+    "id": 32681,
+    "latitude": 36.4507836,
+    "longitude": -103.184797,
+    "threadexSid": "CAOthr"
+  },
+  {
+    "name": "Roswell",
+    "city": "Roswell",
+    "state": "NM",
+    "stateName": "New Mexico",
+    "id": 32844,
+    "latitude": 33.3943282,
+    "longitude": -104.5229518,
+    "threadexSid": "ROWthr"
+  },
+  {
+    "name": "THURSTON 2",
+    "city": "THURSTON 2",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 19032,
+    "latitude": 43.0630296,
+    "longitude": -75.2710464,
+    "threadexSid": null
+  },
+  {
+    "name": "Albany",
+    "city": "Albany",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32641,
+    "latitude": 42.6840353,
+    "longitude": -73.8477748,
+    "threadexSid": "ALBthr"
+  },
+  {
+    "name": "Binghamton",
+    "city": "Binghamton",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32660,
+    "latitude": 42.098698,
+    "longitude": -75.9125187,
+    "threadexSid": "BGMthr"
+  },
+  {
+    "name": "Buffalo",
+    "city": "Buffalo",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32677,
+    "latitude": 42.8867166,
+    "longitude": -78.8783922,
+    "threadexSid": "BUFthr"
+  },
+  {
+    "name": "Islip",
+    "city": "Islip",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32766,
+    "latitude": 40.7300685,
+    "longitude": -73.2107266,
+    "threadexSid": "ISPthr"
+  },
+  {
+    "name": "New York-Kennedy Airport",
+    "city": "New York-Kennedy Airport",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32770,
+    "latitude": 40.6429479,
+    "longitude": -73.7793734,
+    "threadexSid": "JFKthr"
+  },
+  {
+    "name": "New York-LGA",
+    "city": "New York-LGA",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32780,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": "LGAthr"
+  },
+  {
+    "name": "New York-Central Park",
+    "city": "New York-Central Park",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32811,
+    "latitude": 40.774738,
+    "longitude": -73.9923669,
+    "threadexSid": "NYCthr"
+  },
+  {
+    "name": "Rochester",
+    "city": "Rochester",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32843,
+    "latitude": 43.157285,
+    "longitude": -77.615214,
+    "threadexSid": "ROCthr"
+  },
+  {
+    "name": "Syracuse",
+    "city": "Syracuse",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 32869,
+    "latitude": 43.0481221,
+    "longitude": -76.1474244,
+    "threadexSid": "SYRthr"
+  },
+  {
+    "name": "Poughkeepsie",
+    "city": "Poughkeepsie",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 80260,
+    "latitude": 41.7065539,
+    "longitude": -73.9283672,
+    "threadexSid": "POUthr"
+  },
+  {
+    "name": "Glens Falls",
+    "city": "Glens Falls",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 83783,
+    "latitude": 43.309941,
+    "longitude": -73.644447,
+    "threadexSid": "GFLthr"
+  },
+  {
+    "name": "Plattsburgh",
+    "city": "Plattsburgh",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 83799,
+    "latitude": 44.6960855,
+    "longitude": -73.4542915,
+    "threadexSid": "PBGthr"
+  },
+  {
+    "name": "Fredonia",
+    "city": "Fredonia",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 83803,
+    "latitude": 42.440058,
+    "longitude": -79.331711,
+    "threadexSid": "PTDN6thr"
+  },
+  {
+    "name": "Saranac Lake",
+    "city": "Saranac Lake",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 83805,
+    "latitude": 44.3296606,
+    "longitude": -74.1311198,
+    "threadexSid": "SLKthr"
+  },
+  {
+    "name": "Jamestown",
+    "city": "Jamestown",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 85841,
+    "latitude": 42.0965167,
+    "longitude": -79.2380322,
+    "threadexSid": "JSTN6thr"
+  },
+  {
+    "name": "Oswego",
+    "city": "Oswego",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 85851,
+    "latitude": 43.4112973,
+    "longitude": -76.1279841,
+    "threadexSid": "OSWN6thr"
+  },
+  {
+    "name": "Newcomb",
+    "city": "Newcomb",
+    "state": "NY",
+    "stateName": "New York",
+    "id": 94461,
+    "latitude": 43.969592,
+    "longitude": -74.164925,
+    "threadexSid": "NCBN6thr"
+  },
+  {
+    "name": "Asheville",
+    "city": "Asheville",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32653,
+    "latitude": 35.595363,
+    "longitude": -82.5508407,
+    "threadexSid": "AVLthr"
+  },
+  {
+    "name": "Charlotte",
+    "city": "Charlotte",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32687,
+    "latitude": 35.2272086,
+    "longitude": -80.8430827,
+    "threadexSid": "CLTthr"
+  },
+  {
+    "name": "Greensboro",
+    "city": "Greensboro",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32743,
+    "latitude": 36.0726355,
+    "longitude": -79.7919754,
+    "threadexSid": "GSOthr"
+  },
+  {
+    "name": "Cape Hatteras",
+    "city": "Cape Hatteras",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32751,
+    "latitude": 35.2252064,
+    "longitude": -75.5279144,
+    "threadexSid": "HSEthr"
+  },
+  {
+    "name": "Wilmington",
+    "city": "Wilmington",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32760,
+    "latitude": 34.2257282,
+    "longitude": -77.9447107,
+    "threadexSid": "ILMthr"
+  },
+  {
+    "name": "Raleigh",
+    "city": "Raleigh",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 32838,
+    "latitude": 35.7803977,
+    "longitude": -78.6390989,
+    "threadexSid": "RDUthr"
+  },
+  {
+    "name": "Elizabeth City",
+    "city": "Elizabeth City",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 80233,
+    "latitude": 36.3010192,
+    "longitude": -76.2203699,
+    "threadexSid": "ECGthr"
+  },
+  {
+    "name": "Lumberton",
+    "city": "Lumberton",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 80245,
+    "latitude": 34.6183305,
+    "longitude": -79.008205,
+    "threadexSid": "LBTthr"
+  },
+  {
+    "name": "Fayetteville",
+    "city": "Fayetteville",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 83781,
+    "latitude": 35.0525759,
+    "longitude": -78.878292,
+    "threadexSid": "FAYthr"
+  },
+  {
+    "name": "Mount Mitchell",
+    "city": "Mount Mitchell",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 85846,
+    "latitude": 35.7649563,
+    "longitude": -82.2651155,
+    "threadexSid": "MMTN7thr"
+  },
+  {
+    "name": "Bryson City",
+    "city": "Bryson City",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 94448,
+    "latitude": 35.4309291,
+    "longitude": -83.447381,
+    "threadexSid": "BRCN7thr"
+  },
+  {
+    "name": "New Bern",
+    "city": "New Bern",
+    "state": "NC",
+    "stateName": "North Carolina",
+    "id": 94455,
+    "latitude": 35.1084931,
+    "longitude": -77.0441143,
+    "threadexSid": "EWNthr"
+  },
+  {
+    "name": "Bismarck",
+    "city": "Bismarck",
+    "state": "ND",
+    "stateName": "North Dakota",
+    "id": 32665,
+    "latitude": 46.808327,
+    "longitude": -100.783739,
+    "threadexSid": "BISthr"
+  },
+  {
+    "name": "Fargo",
+    "city": "Fargo",
+    "state": "ND",
+    "stateName": "North Dakota",
+    "id": 32723,
+    "latitude": 46.877229,
+    "longitude": -96.789821,
+    "threadexSid": "FARthr"
+  },
+  {
+    "name": "Grand Forks",
+    "city": "Grand Forks",
+    "state": "ND",
+    "stateName": "North Dakota",
+    "id": 32733,
+    "latitude": 47.9252104,
+    "longitude": -97.0306325,
+    "threadexSid": "GFKthr"
+  },
+  {
+    "name": "Williston",
+    "city": "Williston",
+    "state": "ND",
+    "stateName": "North Dakota",
+    "id": 32765,
+    "latitude": 48.1465457,
+    "longitude": -103.621814,
+    "threadexSid": "ISNthr"
+  },
+  {
+    "name": "Saipan",
+    "city": "Saipan",
+    "state": "MP",
+    "stateName": "MP",
+    "id": 32979,
+    "latitude": 15.1909825,
+    "longitude": 145.746743,
+    "threadexSid": null
+  },
+  {
+    "name": "Akron",
+    "city": "Akron",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32680,
+    "latitude": 41.083064,
+    "longitude": -81.518485,
+    "threadexSid": "CAKthr"
+  },
+  {
+    "name": "Cleveland",
+    "city": "Cleveland",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32686,
+    "latitude": 41.4996574,
+    "longitude": -81.6936772,
+    "threadexSid": "CLEthr"
+  },
+  {
+    "name": "Columbus",
+    "city": "Columbus",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32688,
+    "latitude": 39.9622601,
+    "longitude": -83.0007065,
+    "threadexSid": "CMHthr"
+  },
+  {
+    "name": "Cincinnati",
+    "city": "Cincinnati",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32698,
+    "latitude": 39.1014537,
+    "longitude": -84.5124602,
+    "threadexSid": "CVGthr"
+  },
+  {
+    "name": "Dayton",
+    "city": "Dayton",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32702,
+    "latitude": 39.7589478,
+    "longitude": -84.1916069,
+    "threadexSid": "DAYthr"
+  },
+  {
+    "name": "Mansfield",
+    "city": "Mansfield",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32797,
+    "latitude": 40.75839,
+    "longitude": -82.5154471,
+    "threadexSid": "MFDthr"
+  },
+  {
+    "name": "Toledo",
+    "city": "Toledo",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32872,
+    "latitude": 41.6529143,
+    "longitude": -83.5378173,
+    "threadexSid": "TOLthr"
+  },
+  {
+    "name": "Youngstown",
+    "city": "Youngstown",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 32888,
+    "latitude": 41.1035786,
+    "longitude": -80.6520161,
+    "threadexSid": "YNGthr"
+  },
+  {
+    "name": "New Philadelphia",
+    "city": "New Philadelphia",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 80258,
+    "latitude": 40.4897871,
+    "longitude": -81.4456706,
+    "threadexSid": "PHDthr"
+  },
+  {
+    "name": "Zanesville",
+    "city": "Zanesville",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 80273,
+    "latitude": 39.9401426,
+    "longitude": -82.005019,
+    "threadexSid": "ZZVthr"
+  },
+  {
+    "name": "Athens",
+    "city": "Athens",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 94446,
+    "latitude": 39.355589,
+    "longitude": -82.0610404,
+    "threadexSid": "ATHO1thr"
+  },
+  {
+    "name": "Wilmington",
+    "city": "Wilmington",
+    "state": "OH",
+    "stateName": "Ohio",
+    "id": 94457,
+    "latitude": 39.4453393,
+    "longitude": -83.8285375,
+    "threadexSid": "ILNthr"
+  },
+  {
+    "name": "Oklahoma City",
+    "city": "Oklahoma City",
+    "state": "OK",
+    "stateName": "Oklahoma",
+    "id": 32814,
+    "latitude": 35.4729886,
+    "longitude": -97.5170536,
+    "threadexSid": "OKCthr"
+  },
+  {
+    "name": "Tulsa",
+    "city": "Tulsa",
+    "state": "OK",
+    "stateName": "Oklahoma",
+    "id": 32876,
+    "latitude": 36.1563122,
+    "longitude": -95.9927516,
+    "threadexSid": "TULthr"
+  },
+  {
+    "name": "Lawton",
+    "city": "Lawton",
+    "state": "OK",
+    "stateName": "Oklahoma",
+    "id": 80244,
+    "latitude": 34.6086854,
+    "longitude": -98.3903305,
+    "threadexSid": "LAWthr"
+  },
+  {
+    "name": "Stillwater",
+    "city": "Stillwater",
+    "state": "OK",
+    "stateName": "Oklahoma",
+    "id": 83809,
+    "latitude": 36.1156306,
+    "longitude": -97.0585717,
+    "threadexSid": "SWOthr"
+  },
+  {
+    "name": "Astoria",
+    "city": "Astoria",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32649,
+    "latitude": 46.1882007,
+    "longitude": -123.8319802,
+    "threadexSid": "ASTthr"
+  },
+  {
+    "name": "Burns",
+    "city": "Burns",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32668,
+    "latitude": 43.5861256,
+    "longitude": -119.054413,
+    "threadexSid": "BNOthr"
+  },
+  {
+    "name": "Eugene",
+    "city": "Eugene",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32718,
+    "latitude": 44.0505054,
+    "longitude": -123.0950506,
+    "threadexSid": "EUGthr"
+  },
+  {
+    "name": "Medford",
+    "city": "Medford",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32798,
+    "latitude": 42.3264181,
+    "longitude": -122.8718605,
+    "threadexSid": "MFRthr"
+  },
+  {
+    "name": "Pendleton",
+    "city": "Pendleton",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32825,
+    "latitude": 45.672075,
+    "longitude": -118.7885967,
+    "threadexSid": "PDTthr"
+  },
+  {
+    "name": "Portland",
+    "city": "Portland",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32826,
+    "latitude": 45.5202471,
+    "longitude": -122.674194,
+    "threadexSid": "PDXthr"
+  },
+  {
+    "name": "Salem",
+    "city": "Salem",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 32861,
+    "latitude": 44.9391565,
+    "longitude": -123.033121,
+    "threadexSid": "SLEthr"
+  },
+  {
+    "name": "Baker City",
+    "city": "Baker City",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 80227,
+    "latitude": 44.7748748,
+    "longitude": -117.834384,
+    "threadexSid": "BKEthr"
+  },
+  {
+    "name": "Ontario",
+    "city": "Ontario",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 80256,
+    "latitude": 44.0265525,
+    "longitude": -116.9629378,
+    "threadexSid": "ONOthr"
+  },
+  {
+    "name": "Brookings",
+    "city": "Brookings",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 83773,
+    "latitude": 42.0521298,
+    "longitude": -124.2832868,
+    "threadexSid": "BROO3thr"
+  },
+  {
+    "name": "Klamath Falls",
+    "city": "Klamath Falls",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 83791,
+    "latitude": 42.224867,
+    "longitude": -121.78167,
+    "threadexSid": "LMTthr"
+  },
+  {
+    "name": "Portland Downtown",
+    "city": "Portland Downtown",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 83801,
+    "latitude": 45.5152744,
+    "longitude": -122.680025,
+    "threadexSid": "PGWO3thr"
+  },
+  {
+    "name": "Hillsboro",
+    "city": "Hillsboro",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 85839,
+    "latitude": 45.5228939,
+    "longitude": -122.989827,
+    "threadexSid": "HIOthr"
+  },
+  {
+    "name": "McMinnville",
+    "city": "McMinnville",
+    "state": "OR",
+    "stateName": "Oregon",
+    "id": 85847,
+    "latitude": 45.2100367,
+    "longitude": -123.194463,
+    "threadexSid": "MMVthr"
+  },
+  {
+    "name": "Koror",
+    "city": "Koror",
+    "state": "PW",
+    "stateName": "PW",
+    "id": 32978,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Allentown",
+    "city": "Allentown",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32631,
+    "latitude": 40.6022059,
+    "longitude": -75.4712794,
+    "threadexSid": "ABEthr"
+  },
+  {
+    "name": "Avoca",
+    "city": "Avoca",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32654,
+    "latitude": 41.3398022,
+    "longitude": -75.7363033,
+    "threadexSid": "AVPthr"
+  },
+  {
+    "name": "Erie",
+    "city": "Erie",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32717,
+    "latitude": 42.1294712,
+    "longitude": -80.0852695,
+    "threadexSid": "ERIthr"
+  },
+  {
+    "name": "Williamsport",
+    "city": "Williamsport",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32764,
+    "latitude": 41.2411556,
+    "longitude": -77.0011096,
+    "threadexSid": "IPTthr"
+  },
+  {
+    "name": "Middletown-Harrisburg",
+    "city": "Middletown-Harrisburg",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32794,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": "MDTthr"
+  },
+  {
+    "name": "Philadelphia",
+    "city": "Philadelphia",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32827,
+    "latitude": 39.9527237,
+    "longitude": -75.1635262,
+    "threadexSid": "PHLthr"
+  },
+  {
+    "name": "Pittsburgh",
+    "city": "Pittsburgh",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 32831,
+    "latitude": 40.4416941,
+    "longitude": -79.9900861,
+    "threadexSid": "PITthr"
+  },
+  {
+    "name": "Reading",
+    "city": "Reading",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 80265,
+    "latitude": 40.335345,
+    "longitude": -75.9279495,
+    "threadexSid": "RDGthr"
+  },
+  {
+    "name": "Mount Pocono",
+    "city": "Mount Pocono",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 83795,
+    "latitude": 41.1220987,
+    "longitude": -75.3646997,
+    "threadexSid": "MPOthr"
+  },
+  {
+    "name": "Philadelphia Center City",
+    "city": "Philadelphia Center City",
+    "state": "PA",
+    "stateName": "Pennsylvania",
+    "id": 85852,
+    "latitude": 39.9655639,
+    "longitude": -75.1815121,
+    "threadexSid": "PFIP1thr"
+  },
+  {
+    "name": "San Juan",
+    "city": "San Juan",
+    "state": "PR",
+    "stateName": "PR",
+    "id": 32859,
+    "latitude": 18.384239,
+    "longitude": -66.05344,
+    "threadexSid": null
+  },
+  {
+    "name": "Providence",
+    "city": "Providence",
+    "state": "RI",
+    "stateName": "Rhode Island",
+    "id": 32834,
+    "latitude": 41.8239891,
+    "longitude": -71.4128343,
+    "threadexSid": "PVDthr"
+  },
+  {
+    "name": "Columbia",
+    "city": "Columbia",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 32679,
+    "latitude": 34.000754,
+    "longitude": -81.0352313,
+    "threadexSid": "CAEthr"
+  },
+  {
+    "name": "Charleston",
+    "city": "Charleston",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 32685,
+    "latitude": 32.7884363,
+    "longitude": -79.9399309,
+    "threadexSid": "CHSthr"
+  },
+  {
+    "name": "Greenville-Spartanburg",
+    "city": "Greenville-Spartanburg",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 32744,
+    "latitude": 34.9020311,
+    "longitude": -82.2223242,
+    "threadexSid": "GSPthr"
+  },
+  {
+    "name": "Aiken",
+    "city": "Aiken",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 83767,
+    "latitude": 33.5723191,
+    "longitude": -81.6182086,
+    "threadexSid": "AKIS1thr"
+  },
+  {
+    "name": "Pickens",
+    "city": "Pickens",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 83802,
+    "latitude": 34.8882592,
+    "longitude": -82.7193824,
+    "threadexSid": "PICS1thr"
+  },
+  {
+    "name": "Caesars Head",
+    "city": "Caesars Head",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 85830,
+    "latitude": 35.1056726,
+    "longitude": -82.6276262,
+    "threadexSid": "CAES1thr"
+  },
+  {
+    "name": "Myrtle Beach",
+    "city": "Myrtle Beach",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 85831,
+    "latitude": 33.6956461,
+    "longitude": -78.8900409,
+    "threadexSid": "CREthr"
+  },
+  {
+    "name": "Charleston Downtown",
+    "city": "Charleston Downtown",
+    "state": "SC",
+    "stateName": "South Carolina",
+    "id": 85832,
+    "latitude": 32.782269,
+    "longitude": -79.9557298,
+    "threadexSid": "CXMthr"
+  },
+  {
+    "name": "Aberdeen",
+    "city": "Aberdeen",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 32634,
+    "latitude": 45.4649805,
+    "longitude": -98.487813,
+    "threadexSid": "ABRthr"
+  },
+  {
+    "name": "Sioux Falls",
+    "city": "Sioux Falls",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 32729,
+    "latitude": 43.5476008,
+    "longitude": -96.7293629,
+    "threadexSid": "FSDthr"
+  },
+  {
+    "name": "Huron",
+    "city": "Huron",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 32750,
+    "latitude": 44.36308,
+    "longitude": -98.214388,
+    "threadexSid": "HONthr"
+  },
+  {
+    "name": "Rapid City",
+    "city": "Rapid City",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 32836,
+    "latitude": 44.0806041,
+    "longitude": -103.228023,
+    "threadexSid": "RAPthr"
+  },
+  {
+    "name": "Mitchell",
+    "city": "Mitchell",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 80250,
+    "latitude": 43.70953,
+    "longitude": -98.025379,
+    "threadexSid": "MHEthr"
+  },
+  {
+    "name": "Rapid City Downtown",
+    "city": "Rapid City Downtown",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 83814,
+    "latitude": 44.0877082,
+    "longitude": -103.2233785,
+    "threadexSid": "UNRS2thr"
+  },
+  {
+    "name": "Sisseton",
+    "city": "Sisseton",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 85825,
+    "latitude": 45.664557,
+    "longitude": -97.049791,
+    "threadexSid": "8D3thr"
+  },
+  {
+    "name": "Mobridge",
+    "city": "Mobridge",
+    "state": "SD",
+    "stateName": "South Dakota",
+    "id": 85843,
+    "latitude": 45.537216,
+    "longitude": -100.427913,
+    "threadexSid": "MBGthr"
+  },
+  {
+    "name": "Nashville",
+    "city": "Nashville",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32667,
+    "latitude": 36.1622767,
+    "longitude": -86.7742984,
+    "threadexSid": "BNAthr"
+  },
+  {
+    "name": "Chattanooga",
+    "city": "Chattanooga",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32684,
+    "latitude": 35.0457219,
+    "longitude": -85.3094883,
+    "threadexSid": "CHAthr"
+  },
+  {
+    "name": "Memphis",
+    "city": "Memphis",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32796,
+    "latitude": 35.1460249,
+    "longitude": -90.0517638,
+    "threadexSid": "MEMthr"
+  },
+  {
+    "name": "Oak Ridge",
+    "city": "Oak Ridge",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32818,
+    "latitude": 36.0103562,
+    "longitude": -84.2696449,
+    "threadexSid": "OQTthr"
+  },
+  {
+    "name": "Bristol-Johnson City",
+    "city": "Bristol-Johnson City",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32875,
+    "latitude": 36.2951068,
+    "longitude": -82.3470834,
+    "threadexSid": "TRIthr"
+  },
+  {
+    "name": "Knoxville",
+    "city": "Knoxville",
+    "state": "TN",
+    "stateName": "Tennessee",
+    "id": 32879,
+    "latitude": 35.9603948,
+    "longitude": -83.9210261,
+    "threadexSid": "TYSthr"
+  },
+  {
+    "name": "Abilene",
+    "city": "Abilene",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32632,
+    "latitude": 32.44645,
+    "longitude": -99.7475905,
+    "threadexSid": "ABIthr"
+  },
+  {
+    "name": "Waco",
+    "city": "Waco",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32635,
+    "latitude": 31.5491899,
+    "longitude": -97.1474628,
+    "threadexSid": "ACTthr"
+  },
+  {
+    "name": "Amarillo",
+    "city": "Amarillo",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32644,
+    "latitude": 35.20729,
+    "longitude": -101.8371192,
+    "threadexSid": "AMAthr"
+  },
+  {
+    "name": "Austin",
+    "city": "Austin",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32651,
+    "latitude": 30.2711286,
+    "longitude": -97.7436995,
+    "threadexSid": "ATTthr"
+  },
+  {
+    "name": "Austin-Bergstrom Airport",
+    "city": "Austin-Bergstrom Airport",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32652,
+    "latitude": 30.1934892,
+    "longitude": -97.6650096,
+    "threadexSid": "AUSthr"
+  },
+  {
+    "name": "Beaumont-Port Arthur",
+    "city": "Beaumont-Port Arthur",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32671,
+    "latitude": 29.9459728,
+    "longitude": -93.9743616,
+    "threadexSid": "BPTthr"
+  },
+  {
+    "name": "Brownsville",
+    "city": "Brownsville",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32672,
+    "latitude": 25.9024289,
+    "longitude": -97.4981698,
+    "threadexSid": "BROthr"
+  },
+  {
+    "name": "Corpus Christi",
+    "city": "Corpus Christi",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32695,
+    "latitude": 27.7635302,
+    "longitude": -97.4033191,
+    "threadexSid": "CRPthr"
+  },
+  {
+    "name": "Dallas",
+    "city": "Dallas",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32701,
+    "latitude": 32.7762719,
+    "longitude": -96.7968559,
+    "threadexSid": "DALthr"
+  },
+  {
+    "name": "Dallas-Fort Worth",
+    "city": "Dallas-Fort Worth",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32707,
+    "latitude": 32.8965194,
+    "longitude": -97.0465221,
+    "threadexSid": "DFWthr"
+  },
+  {
+    "name": "Del Rio",
+    "city": "Del Rio",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32709,
+    "latitude": 29.357515,
+    "longitude": -100.8987707,
+    "threadexSid": "DRTthr"
+  },
+  {
+    "name": "El Paso",
+    "city": "El Paso",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32715,
+    "latitude": 31.7601164,
+    "longitude": -106.4870404,
+    "threadexSid": "ELPthr"
+  },
+  {
+    "name": "Galveston",
+    "city": "Galveston",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32738,
+    "latitude": 29.3872254,
+    "longitude": -94.992736,
+    "threadexSid": "GLSthr"
+  },
+  {
+    "name": "Houston",
+    "city": "Houston",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32757,
+    "latitude": 29.7589382,
+    "longitude": -95.3676974,
+    "threadexSid": "IAHthr"
+  },
+  {
+    "name": "Lubbock",
+    "city": "Lubbock",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32776,
+    "latitude": 33.5855677,
+    "longitude": -101.8470215,
+    "threadexSid": "LBBthr"
+  },
+  {
+    "name": "Midland-Odessa",
+    "city": "Midland-Odessa",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32789,
+    "latitude": 31.9996941,
+    "longitude": -102.1562256,
+    "threadexSid": "MAFthr"
+  },
+  {
+    "name": "San Antonio",
+    "city": "San Antonio",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32848,
+    "latitude": 29.4246002,
+    "longitude": -98.4951405,
+    "threadexSid": "SATthr"
+  },
+  {
+    "name": "San Angelo",
+    "city": "San Angelo",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32858,
+    "latitude": 31.4649685,
+    "longitude": -100.4405094,
+    "threadexSid": "SJTthr"
+  },
+  {
+    "name": "Wichita Falls",
+    "city": "Wichita Falls",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32865,
+    "latitude": 33.9004572,
+    "longitude": -98.5020777,
+    "threadexSid": "SPSthr"
+  },
+  {
+    "name": "Victoria",
+    "city": "Victoria",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 32881,
+    "latitude": 28.8026443,
+    "longitude": -96.9766308,
+    "threadexSid": "VCTthr"
+  },
+  {
+    "name": "Childress",
+    "city": "Childress",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 35080,
+    "latitude": 34.5196569,
+    "longitude": -100.2067656,
+    "threadexSid": "CDSthr"
+  },
+  {
+    "name": "College Station",
+    "city": "College Station",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 80230,
+    "latitude": 30.6183939,
+    "longitude": -96.3455991,
+    "threadexSid": "CLLthr"
+  },
+  {
+    "name": "Borger",
+    "city": "Borger",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 83771,
+    "latitude": 35.6689767,
+    "longitude": -101.3919481,
+    "threadexSid": "BGDthr"
+  },
+  {
+    "name": "Laredo",
+    "city": "Laredo",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 83792,
+    "latitude": 27.5075005,
+    "longitude": -99.5069922,
+    "threadexSid": "LRDthr"
+  },
+  {
+    "name": "McAllen",
+    "city": "McAllen",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 83794,
+    "latitude": 26.204114,
+    "longitude": -98.2300605,
+    "threadexSid": "MFEthr"
+  },
+  {
+    "name": "Tyler",
+    "city": "Tyler",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 83812,
+    "latitude": 32.3512601,
+    "longitude": -95.3010624,
+    "threadexSid": "TYRthr"
+  },
+  {
+    "name": "Longview",
+    "city": "Longview",
+    "state": "TX",
+    "stateName": "Texas",
+    "id": 85835,
+    "latitude": 32.5007031,
+    "longitude": -94.74049,
+    "threadexSid": "GGGthr"
+  },
+  {
+    "name": "LITTLE SAHARA RECREATION AREA",
+    "city": "LITTLE SAHARA RECREATION AREA",
+    "state": "UT",
+    "stateName": "Utah",
+    "id": 24607,
+    "latitude": 39.6746538,
+    "longitude": -112.3733573,
+    "threadexSid": null
+  },
+  {
+    "name": "DINOSAUR NM-QUARRY AREA",
+    "city": "DINOSAUR NM-QUARRY AREA",
+    "state": "UT",
+    "stateName": "Utah",
+    "id": 24694,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Salt Lake City",
+    "city": "Salt Lake City",
+    "state": "UT",
+    "stateName": "Utah",
+    "id": 32860,
+    "latitude": 40.7596198,
+    "longitude": -111.886797,
+    "threadexSid": "SLCthr"
+  },
+  {
+    "name": "Burlington",
+    "city": "Burlington",
+    "state": "VT",
+    "stateName": "Vermont",
+    "id": 32676,
+    "latitude": 44.4761601,
+    "longitude": -73.212906,
+    "threadexSid": "BTVthr"
+  },
+  {
+    "name": "Sterling-Dulles Airport",
+    "city": "Sterling-Dulles Airport",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32756,
+    "latitude": 39.0183453,
+    "longitude": -77.4268102,
+    "threadexSid": "IADthr"
+  },
+  {
+    "name": "Lynchburg",
+    "city": "Lynchburg",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32788,
+    "latitude": 37.4137536,
+    "longitude": -79.1422464,
+    "threadexSid": "LYHthr"
+  },
+  {
+    "name": "Norfolk",
+    "city": "Norfolk",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32820,
+    "latitude": 36.8493695,
+    "longitude": -76.2899539,
+    "threadexSid": "ORFthr"
+  },
+  {
+    "name": "Richmond",
+    "city": "Richmond",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32840,
+    "latitude": 37.5385087,
+    "longitude": -77.43428,
+    "threadexSid": "RICthr"
+  },
+  {
+    "name": "Roanoke",
+    "city": "Roanoke",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32842,
+    "latitude": 37.270973,
+    "longitude": -79.9414313,
+    "threadexSid": "ROAthr"
+  },
+  {
+    "name": "Wallops Island",
+    "city": "Wallops Island",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 32884,
+    "latitude": 37.8838711,
+    "longitude": -75.4561666,
+    "threadexSid": "WALthr"
+  },
+  {
+    "name": "Danville",
+    "city": "Danville",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 83779,
+    "latitude": 36.5879877,
+    "longitude": -79.3916713,
+    "threadexSid": "DANthr"
+  },
+  {
+    "name": "Charlottesville",
+    "city": "Charlottesville",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 94451,
+    "latitude": 38.029306,
+    "longitude": -78.4766781,
+    "threadexSid": "CHOthr"
+  },
+  {
+    "name": "Blacksburg",
+    "city": "Blacksburg",
+    "state": "VA",
+    "stateName": "Virginia",
+    "id": 94466,
+    "latitude": 37.2296566,
+    "longitude": -80.4136767,
+    "threadexSid": "RNKthr"
+  },
+  {
+    "name": "Spokane",
+    "city": "Spokane",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 32732,
+    "latitude": 47.6571934,
+    "longitude": -117.42351,
+    "threadexSid": "GEGthr"
+  },
+  {
+    "name": "Olympia",
+    "city": "Olympia",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 32815,
+    "latitude": 47.0451022,
+    "longitude": -122.8950075,
+    "threadexSid": "OLMthr"
+  },
+  {
+    "name": "Seattle Tacoma",
+    "city": "Seattle Tacoma",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 32853,
+    "latitude": 47.4475673,
+    "longitude": -122.3080159,
+    "threadexSid": "SEAthr"
+  },
+  {
+    "name": "Quillayute",
+    "city": "Quillayute",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 32880,
+    "latitude": 47.9431296,
+    "longitude": -124.5424346,
+    "threadexSid": "UILthr"
+  },
+  {
+    "name": "Yakima",
+    "city": "Yakima",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 32887,
+    "latitude": 46.601557,
+    "longitude": -120.510842,
+    "threadexSid": "YKMthr"
+  },
+  {
+    "name": "Tri-Cities",
+    "city": "Tri-Cities",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 80261,
+    "latitude": 46.3270184,
+    "longitude": -119.2729673,
+    "threadexSid": "PSCthr"
+  },
+  {
+    "name": "Pullman",
+    "city": "Pullman",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 80263,
+    "latitude": 46.7304268,
+    "longitude": -117.173895,
+    "threadexSid": "PUWthr"
+  },
+  {
+    "name": "Omak",
+    "city": "Omak",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 83798,
+    "latitude": 48.4109853,
+    "longitude": -119.52755,
+    "threadexSid": "OMKthr"
+  },
+  {
+    "name": "Vancouver",
+    "city": "Vancouver",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 83815,
+    "latitude": 45.6306954,
+    "longitude": -122.6744557,
+    "threadexSid": "VUOthr"
+  },
+  {
+    "name": "Seattle City",
+    "city": "Seattle City",
+    "state": "WA",
+    "stateName": "Washington",
+    "id": 98626,
+    "latitude": 47.6177084,
+    "longitude": -122.3444624,
+    "threadexSid": "SEWthr"
+  },
+  {
+    "name": "Beckley",
+    "city": "Beckley",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 32666,
+    "latitude": 37.7781702,
+    "longitude": -81.1881557,
+    "threadexSid": "BKWthr"
+  },
+  {
+    "name": "Charleston",
+    "city": "Charleston",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 32696,
+    "latitude": 38.3505995,
+    "longitude": -81.6332812,
+    "threadexSid": "CRWthr"
+  },
+  {
+    "name": "Elkins",
+    "city": "Elkins",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 32713,
+    "latitude": 38.925927,
+    "longitude": -79.8466552,
+    "threadexSid": "EKNthr"
+  },
+  {
+    "name": "Huntington",
+    "city": "Huntington",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 32754,
+    "latitude": 38.4192496,
+    "longitude": -82.445154,
+    "threadexSid": "HTSthr"
+  },
+  {
+    "name": "Wheeling",
+    "city": "Wheeling",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 80240,
+    "latitude": 40.0639616,
+    "longitude": -80.7209149,
+    "threadexSid": "HLGthr"
+  },
+  {
+    "name": "Morgantown",
+    "city": "Morgantown",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 80249,
+    "latitude": 39.6296809,
+    "longitude": -79.9559437,
+    "threadexSid": "MGWthr"
+  },
+  {
+    "name": "Parkersburg",
+    "city": "Parkersburg",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 80259,
+    "latitude": 39.2667309,
+    "longitude": -81.5620755,
+    "threadexSid": "PKBthr"
+  },
+  {
+    "name": "Bluefield",
+    "city": "Bluefield",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 83772,
+    "latitude": 37.2698395,
+    "longitude": -81.2223195,
+    "threadexSid": "BLFthr"
+  },
+  {
+    "name": "Clarksburg",
+    "city": "Clarksburg",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 83777,
+    "latitude": 39.2806451,
+    "longitude": -80.3445341,
+    "threadexSid": "CKBthr"
+  },
+  {
+    "name": "Martinsburg",
+    "city": "Martinsburg",
+    "state": "WV",
+    "stateName": "West Virginia",
+    "id": 85848,
+    "latitude": 39.4562528,
+    "longitude": -77.9639604,
+    "threadexSid": "MRBthr"
+  },
+  {
+    "name": "ARGONNE 1.5-NW",
+    "city": "ARGONNE 1.5-NW",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 29332,
+    "latitude": null,
+    "longitude": null,
+    "threadexSid": null
+  },
+  {
+    "name": "Green Bay",
+    "city": "Green Bay",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 32740,
+    "latitude": 44.5126379,
+    "longitude": -88.0125794,
+    "threadexSid": "GRBthr"
+  },
+  {
+    "name": "La Crosse",
+    "city": "La Crosse",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 32786,
+    "latitude": 43.8122836,
+    "longitude": -91.2514355,
+    "threadexSid": "LSEthr"
+  },
+  {
+    "name": "Milwaukee",
+    "city": "Milwaukee",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 32801,
+    "latitude": 43.0386475,
+    "longitude": -87.9090751,
+    "threadexSid": "MKEthr"
+  },
+  {
+    "name": "Madison",
+    "city": "Madison",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 32807,
+    "latitude": 43.074761,
+    "longitude": -89.3837613,
+    "threadexSid": "MSNthr"
+  },
+  {
+    "name": "Ashland",
+    "city": "Ashland",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 80225,
+    "latitude": 46.2062319,
+    "longitude": -90.6802594,
+    "threadexSid": "ASXthr"
+  },
+  {
+    "name": "Wausau",
+    "city": "Wausau",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 80226,
+    "latitude": 44.9597858,
+    "longitude": -89.6272791,
+    "threadexSid": "AUWthr"
+  },
+  {
+    "name": "Eau Claire",
+    "city": "Eau Claire",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 80232,
+    "latitude": 44.811349,
+    "longitude": -91.4984941,
+    "threadexSid": "EAUthr"
+  },
+  {
+    "name": "Hayward",
+    "city": "Hayward",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 80242,
+    "latitude": 46.0129676,
+    "longitude": -91.4848728,
+    "threadexSid": "HYRthr"
+  },
+  {
+    "name": "Rhinelander",
+    "city": "Rhinelander",
+    "state": "WI",
+    "stateName": "Wisconsin",
+    "id": 94465,
+    "latitude": 45.636623,
+    "longitude": -89.412075,
+    "threadexSid": "RHIthr"
+  },
+  {
+    "name": "Casper",
+    "city": "Casper",
+    "state": "WY",
+    "stateName": "Wyoming",
+    "id": 32693,
+    "latitude": 42.8501191,
+    "longitude": -106.325138,
+    "threadexSid": "CPRthr"
+  },
+  {
+    "name": "Cheyenne",
+    "city": "Cheyenne",
+    "state": "WY",
+    "stateName": "Wyoming",
+    "id": 32699,
+    "latitude": 41.139981,
+    "longitude": -104.820246,
+    "threadexSid": "CYSthr"
+  },
+  {
+    "name": "Lander",
+    "city": "Lander",
+    "state": "WY",
+    "stateName": "Wyoming",
+    "id": 32784,
+    "latitude": 42.8330755,
+    "longitude": -108.730702,
+    "threadexSid": "LNDthr"
+  },
+  {
+    "name": "Sheridan",
+    "city": "Sheridan",
+    "state": "WY",
+    "stateName": "Wyoming",
+    "id": 32856,
+    "latitude": 44.7947537,
+    "longitude": -106.8222688,
+    "threadexSid": "SHRthr"
+  }
+]
