@@ -106,6 +106,38 @@ public record WarmSummerNightsData(
     int? RecordCount
 );
 
+public record HeatWaveEvent(
+    string StartDate,
+    string EndDate,
+    int DurationDays,
+    int PeakTemp,
+    string PeakTempDate,
+    double AvgDailyMax,
+    double AvgOvernightLow,
+    int Year
+)
+{
+    public string FormattedStart => DateTime.TryParse(StartDate, out var d) ? d.ToString("MMM d, yyyy") : StartDate;
+    public string FormattedEnd   => DateTime.TryParse(EndDate,   out var d) ? d.ToString("MMM d, yyyy") : EndDate;
+    public string FormattedPeak  => DateTime.TryParse(PeakTempDate, out var d) ? d.ToString("MMM d") : PeakTempDate;
+};
+
+public record HeatWaveData(
+    int CurrentStreak,
+    string? StreakStartDate,
+    bool StreakIsHeatWave,              // streak >= 3 days
+    List<HeatWaveEvent> TopEvents,     // top 10 by duration
+    HeatWaveEvent? MostRecentEvent,
+    List<(int Year, int Count)> EventsPerYear,
+    List<(string Decade, double AvgDuration)> AvgDurationByDecade,
+    int DangerousNightsThisYear,
+    List<(int Year, int Count)> DangerousNightsPerYear,
+    double? HistoricalAvgDuration,
+    double? HistoricalAvgPeak,
+    List<(string Decade, double AvgHigh)> AvgHighByDecade,
+    int HeatWaveThreshold              // 90th percentile of station's historical Jun–Aug highs
+);
+
 // ── Response ───────────────────────────────────────────────────────────────
 
 public class AcisStnDataResponse

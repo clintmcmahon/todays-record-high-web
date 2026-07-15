@@ -14,4 +14,5 @@ public interface IAcisService
     Task<List<DailyDeparture>> GetYearToDateDeparturesAsync(string threadexSid, int year);
     Task<WarmSummerNightsData?> GetWarmSummerNightsAsync(string threadexSid);
     Task<PrecipData?> GetPrecipDataAsync(string threadexSid);
+    Task<HeatWaveData?> GetHeatWaveDataAsync(string threadexSid);
 }

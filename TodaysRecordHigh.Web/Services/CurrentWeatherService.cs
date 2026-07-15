@@ -30,6 +30,7 @@ public class CurrentWeatherService : ICurrentWeatherService
         {
             var url = $"v1/forecast?latitude={lat:F4}&longitude={lon:F4}" +
                       "&current=temperature_2m,apparent_temperature,weathercode,is_day" +
+                      "&daily=temperature_2m_max" +
                       "&temperature_unit=fahrenheit&timezone=auto&forecast_days=1";
 
             var json = await _http.GetStringAsync(url);
@@ -50,7 +51,16 @@ public class CurrentWeatherService : ICurrentWeatherService
 
             DateTime.TryParse(timeStr, out var asOf);
 
-            var result = new CurrentConditions(temp, feels, asOf, tzAbbr, weatherCode, isDay);
+            double? dailyMaxF = null;
+            if (doc.RootElement.TryGetProperty("daily", out var daily) &&
+                daily.TryGetProperty("temperature_2m_max", out var maxArr) &&
+                maxArr.ValueKind == JsonValueKind.Array &&
+                maxArr.GetArrayLength() > 0)
+            {
+                dailyMaxF = maxArr[0].ValueKind == JsonValueKind.Number ? maxArr[0].GetDouble() : null;
+            }
+
+            var result = new CurrentConditions(temp, feels, asOf, tzAbbr, weatherCode, isDay, dailyMaxF);
             _cache.Set(key, result, CacheTtl);
             return result;
         }

@@ -65,12 +65,14 @@ public class StationsController : Controller
         var ytdTask         = _acisService.GetYearToDateDeparturesAsync(sid, year);
         var warmNightsTask  = _acisService.GetWarmSummerNightsAsync(sid);
         var precipTask      = _acisService.GetPrecipDataAsync(sid);
+        var heatWaveTask    = _acisService.GetHeatWaveDataAsync(sid);
         var wxTask          = station.Latitude.HasValue && station.Longitude.HasValue
                               ? _weather.GetCurrentAsync(station.Latitude.Value, station.Longitude.Value)
                               : Task.FromResult<Services.CurrentConditions?>(null);
 
         await Task.WhenAll(recordHighsTask, recordLowsTask, normalMaxTask, normalMinTask,
-                           porTask, extremesTask, hotDaysTask, ytdTask, warmNightsTask, precipTask, wxTask);
+                           porTask, extremesTask, hotDaysTask, ytdTask, warmNightsTask, precipTask,
+                           heatWaveTask, wxTask);
 
         var records    = recordHighsTask.Result;
         var lowRecords = recordLowsTask.Result;
@@ -90,6 +92,7 @@ public class StationsController : Controller
         vm.YtdDepartures        = ytdTask.Result;
         vm.WarmNights           = warmNightsTask.Result;
         vm.Precip               = precipTask.Result;
+        vm.HeatWaves            = heatWaveTask.Result;
         vm.Current              = wxTask.Result;
 
         return View(vm);

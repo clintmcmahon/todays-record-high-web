@@ -35,9 +35,15 @@ public class StationDetailViewModel
     public List<DailyDeparture> YtdDepartures { get; set; } = [];
     public WarmSummerNightsData? WarmNights { get; set; }
     public PrecipData? Precip { get; set; }
+    public HeatWaveData? HeatWaves { get; set; }
 
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }
+
+    public bool RecordBrokenToday =>
+        Current is not null &&
+        AllTimeRecordTemp.HasValue &&
+        Current.TempF >= AllTimeRecordTemp.Value;
 
     public string? RecordProximityLabel
     {

@@ -247,14 +247,14 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out List<(int, int)>? cached) && cached is not null)
             return cached;
 
-        // Fetch all daily maxt from 1970 through yesterday (includes current year so far).
+        // Fetch all daily maxt from POR through yesterday (includes current year so far).
         // cnt_gt90 reduce is not supported on Threadex via ACIS, so we compute counts here.
         var today = DateTime.Now;
         var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
-            SDate = "1970-01-01",
+            SDate = "por",
             EDate = edate,
             Elems = [new AcisElement { Name = "maxt" }]
         };
@@ -348,7 +348,7 @@ public class AcisService : IAcisService
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
-            SDate = "1970-01-01",
+            SDate = "por",
             EDate = edate,
             Elems =
             [
@@ -488,7 +488,7 @@ public class AcisService : IAcisService
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
-            SDate = "1970-01-01",
+            SDate = "por",
             EDate = edate,
             Elems =
             [
@@ -564,6 +564,203 @@ public class AcisService : IAcisService
             warmPerYear, avgLowByDecade, thisSummer, histAvg, recYear, recCount);
 
         _cache.Set(cacheKey, result, TimeSpan.FromHours(3));
+        return result;
+    }
+
+    // ── Heat wave events and stats ────────────────────────────────────────
+
+    public async Task<HeatWaveData?> GetHeatWaveDataAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:heatwave:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out HeatWaveData? cached))
+            return cached;
+
+        var today = DateTime.Now;
+        var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
+
+        var request = new AcisStnDataRequest
+        {
+            Sid = threadexSid,
+            SDate = "por",
+            EDate = edate,
+            Elems =
+            [
+                new AcisElement { Name = "maxt" },
+                new AcisElement { Name = "mint" }
+            ]
+        };
+
+        var response = await PostStnDataAsync(request);
+        if (response?.Data is null)
+            return null;
+
+        int? ParseTemp(JsonElement el)
+        {
+            var d = ParseDouble(el);
+            return d.HasValue ? (int?)Math.Round(d.Value) : null;
+        }
+
+        // Parse all rows into a typed list
+        var data = new List<(DateTime Date, int? MaxT, int? MinT)>();
+        foreach (var row in response.Data)
+        {
+            if (row.Count < 3) continue;
+            if (!DateTime.TryParse(row[0].GetString(), out var date)) continue;
+            var maxT = ParseTemp(row[1]);
+            var minT = ParseTemp(row[2]);
+            data.Add((date, maxT, minT));
+        }
+
+        // Compute station-specific heat wave threshold: 90th percentile of all historical
+        // Jun–Aug daily highs (complete years only). This makes the threshold relative to
+        // local climate — 90°F is unremarkable in Phoenix but genuinely hot in Minneapolis.
+        var summerMaxTs = data
+            .Where(d => d.Date.Month >= 6 && d.Date.Month <= 8
+                     && d.Date.Year < today.Year
+                     && d.MaxT.HasValue)
+            .Select(d => d.MaxT!.Value)
+            .OrderBy(t => t)
+            .ToList();
+
+        int threshold;
+        if (summerMaxTs.Count >= 30)
+        {
+            var idx = (int)Math.Floor(0.90 * summerMaxTs.Count);
+            threshold = summerMaxTs[Math.Min(idx, summerMaxTs.Count - 1)];
+        }
+        else
+        {
+            threshold = 90; // fallback for stations with very limited data
+        }
+
+        const int minEventDays = 3;
+
+        // Build a local helper to turn a slice into a HeatWaveEvent
+        HeatWaveEvent BuildEvent(List<(DateTime Date, int? MaxT, int? MinT)> slice)
+        {
+            var peakDay = slice.Where(d => d.MaxT.HasValue).OrderByDescending(d => d.MaxT).First();
+            return new HeatWaveEvent(
+                StartDate:      slice[0].Date.ToString("yyyy-MM-dd"),
+                EndDate:        slice[^1].Date.ToString("yyyy-MM-dd"),
+                DurationDays:   slice.Count,
+                PeakTemp:       peakDay.MaxT!.Value,
+                PeakTempDate:   peakDay.Date.ToString("yyyy-MM-dd"),
+                AvgDailyMax:    Math.Round(slice.Where(d => d.MaxT.HasValue).Average(d => (double)d.MaxT!.Value), 1),
+                AvgOvernightLow: slice.Any(d => d.MinT.HasValue)
+                                    ? Math.Round(slice.Where(d => d.MinT.HasValue).Average(d => (double)d.MinT!.Value), 1)
+                                    : 0,
+                Year:           slice[0].Date.Year
+            );
+        }
+
+        // Find heat wave events
+        var events = new List<HeatWaveEvent>();
+        int streakStart = -1;
+        for (int i = 0; i <= data.Count; i++)
+        {
+            bool hot = i < data.Count && data[i].MaxT.HasValue && data[i].MaxT!.Value >= threshold;
+            if (hot)
+            {
+                if (streakStart < 0) streakStart = i;
+            }
+            else
+            {
+                if (streakStart >= 0)
+                {
+                    int duration = i - streakStart;
+                    var slice = data.GetRange(streakStart, duration);
+                    if (duration >= minEventDays)
+                        events.Add(BuildEvent(slice));
+                    streakStart = -1;
+                }
+            }
+        }
+
+        // Current streak (consecutive hot days at end of data, regardless of event threshold)
+        int currentStreak = 0;
+        string? streakStartDate = null;
+        for (int i = data.Count - 1; i >= 0; i--)
+        {
+            if (data[i].MaxT.HasValue && data[i].MaxT!.Value >= threshold)
+            {
+                currentStreak++;
+                streakStartDate = data[i].Date.ToString("yyyy-MM-dd");
+            }
+            else break;
+        }
+        bool streakIsHeatWave = currentStreak >= 3;
+
+        // Top 10 events by duration
+        var topEvents = events
+            .OrderByDescending(e => e.DurationDays)
+            .ThenByDescending(e => e.PeakTemp)
+            .Take(10)
+            .ToList();
+
+        // Most recent event
+        var mostRecent = events.Count > 0 ? events[^1] : null;
+
+        // Events per year — fill zeros from first data year through thisYear
+        var thisYear = today.Year;
+        var firstDataYear = data.Count > 0 ? data[0].Date.Year : 1970;
+        var eventsDict = events.GroupBy(e => e.Year).ToDictionary(g => g.Key, g => g.Count());
+        var eventsPerYear = Enumerable.Range(firstDataYear, thisYear - firstDataYear + 1)
+            .Select(y => (Year: y, Count: eventsDict.GetValueOrDefault(y, 0)))
+            .ToList();
+
+        // Avg duration by decade (complete decades only)
+        var completedDecadeCutoff = (thisYear / 10) * 10;
+        var decadeAvgDuration = events
+            .Where(e => e.Year < completedDecadeCutoff)
+            .GroupBy(e => (e.Year / 10) * 10)
+            .Where(g => g.Count() >= 2)
+            .OrderBy(g => g.Key)
+            .Select(g => (Decade: $"{g.Key}s", AvgDuration: Math.Round(g.Average(e => e.DurationDays), 1)))
+            .ToList();
+
+        // Dangerous nights (mint >= 70°F) per year
+        var dangerousNights = data
+            .Where(d => d.MinT.HasValue && d.MinT!.Value >= 70)
+            .GroupBy(d => d.Date.Year)
+            .ToDictionary(g => g.Key, g => g.Count());
+        var dangerousNightsPerYear = Enumerable.Range(firstDataYear, thisYear - firstDataYear + 1)
+            .Select(y => (Year: y, Count: dangerousNights.GetValueOrDefault(y, 0)))
+            .ToList();
+        var dangerousNightsThisYear = dangerousNights.GetValueOrDefault(thisYear, 0);
+
+        // Historical averages (exclude current partial year)
+        var completeEvents = events.Where(e => e.Year < thisYear).ToList();
+        double? historicalAvgDuration = completeEvents.Count > 0
+            ? completeEvents.Average(e => e.DurationDays) : (double?)null;
+        double? historicalAvgPeak = completeEvents.Count > 0
+            ? completeEvents.Average(e => e.PeakTemp) : (double?)null;
+
+        // Avg daily high by decade — full year, complete decades only
+        var completedDecadeCutoffHigh = (thisYear / 10) * 10;
+        var avgHighByDecade = data
+            .Where(d => d.MaxT.HasValue && d.Date.Year < completedDecadeCutoffHigh)
+            .GroupBy(d => (d.Date.Year / 10) * 10)
+            .OrderBy(g => g.Key)
+            .Select(g => (Decade: $"{g.Key}s", AvgHigh: Math.Round(g.Average(d => (double)d.MaxT!.Value), 1)))
+            .ToList();
+
+        var result = new HeatWaveData(
+            CurrentStreak:            currentStreak,
+            StreakStartDate:          streakStartDate,
+            StreakIsHeatWave:         streakIsHeatWave,
+            TopEvents:                topEvents,
+            MostRecentEvent:          mostRecent,
+            EventsPerYear:            eventsPerYear,
+            AvgDurationByDecade:      decadeAvgDuration,
+            DangerousNightsThisYear:  dangerousNightsThisYear,
+            DangerousNightsPerYear:   dangerousNightsPerYear,
+            HistoricalAvgDuration:    historicalAvgDuration,
+            HistoricalAvgPeak:        historicalAvgPeak,
+            AvgHighByDecade:          avgHighByDecade,
+            HeatWaveThreshold:        threshold
+        );
+
+        _cache.Set(cacheKey, result, RecordCacheTtl);
         return result;
     }
 

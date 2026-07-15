@@ -57,7 +57,7 @@ public class RecordsController : ControllerBase
                     currentTemp = wx0?.TempF;
                     currentTempAsOf = wx0?.AsOf.ToString("h:mm tt");
                     return BuildResult(pair.slug, station.City, station.State,
-                        null, null, null, currentTemp, currentTempAsOf, wx0?.TimezoneAbbr ?? "", wx0?.WeatherEmoji ?? "");
+                        null, null, null, currentTemp, currentTempAsOf, wx0?.TimezoneAbbr ?? "", wx0?.WeatherEmoji ?? "", null);
                 }
 
                 var recordsTask = _acisService.GetRecordHighsForDateAsync(sid, monthDay, topN: 1);
@@ -75,12 +75,12 @@ public class RecordsController : ControllerBase
                     records.Count > 0 ? records[0].Temp : null,
                     records.Count > 0 ? records[0].Date : null,
                     normalTask.Result,
-                    currentTemp, currentTempAsOf, tzAbbr, weatherEmoji);
+                    currentTemp, currentTempAsOf, tzAbbr, weatherEmoji, wx?.DailyMaxF);
             }
             catch
             {
                 return BuildResult(pair.slug, station.City, station.State,
-                    null, null, null, null, null, "", "");
+                    null, null, null, null, null, "", "", null);
             }
         });
 
@@ -90,7 +90,8 @@ public class RecordsController : ControllerBase
 
     private static object BuildResult(string slug, string city, string state,
         int? recordTemp, string? recordDate, double? normalTemp,
-        double? currentTemp, string? currentTempAsOf, string tzAbbr, string weatherEmoji) => new
+        double? currentTemp, string? currentTempAsOf, string tzAbbr, string weatherEmoji,
+        double? dailyMaxF) => new
     {
         slug,
         city,
@@ -101,6 +102,7 @@ public class RecordsController : ControllerBase
         currentTemp = currentTemp.HasValue ? Math.Round(currentTemp.Value, 1) : (double?)null,
         currentTempAsOf,
         tzAbbr,
-        weatherEmoji
+        weatherEmoji,
+        dailyMaxF = dailyMaxF.HasValue ? Math.Round(dailyMaxF.Value, 1) : (double?)null
     };
 }
