@@ -764,6 +764,57 @@ public class AcisService : IAcisService
         return result;
     }
 
+    // ── This calendar date across every year on record ────────────────────
+
+    public async Task<List<OnThisDayRecord>> GetOnThisDayHistoryAsync(string threadexSid, string monthDay)
+    {
+        var cacheKey = $"acis:onthisday:{threadexSid}:{monthDay}";
+        if (_cache.TryGetValue(cacheKey, out List<OnThisDayRecord>? cached) && cached is not null)
+            return cached;
+
+        var today = DateTime.Now;
+        var request = new AcisStnDataRequest
+        {
+            Sid = threadexSid,
+            SDate = $"1871-{monthDay}",
+            EDate = $"{today.Year}-{monthDay}",
+            Elems =
+            [
+                new AcisElement { Name = "maxt", Interval = new[] { 1, 0, 0 }, Duration = 1 },
+                new AcisElement { Name = "mint", Interval = new[] { 1, 0, 0 }, Duration = 1 },
+                new AcisElement { Name = "pcpn", Interval = new[] { 1, 0, 0 }, Duration = 1 },
+                new AcisElement { Name = "snow", Interval = new[] { 1, 0, 0 }, Duration = 1 },
+            ]
+        };
+
+        var response = await PostStnDataAsync(request);
+        if (response?.Data is null)
+            return [];
+
+        var results = new List<OnThisDayRecord>();
+        foreach (var row in response.Data)
+        {
+            if (row.Count < 5) continue;
+            if (!DateTime.TryParse(row[0].GetString(), out var date)) continue;
+
+            int? ParseTempCell(JsonElement el) => ParseInt(el);
+            double? ParsePrecipCell(JsonElement el) => el.GetString() == "T" ? 0.0 : ParseDouble(el);
+
+            results.Add(new OnThisDayRecord(
+                date.Year,
+                ParseTempCell(row[1]),
+                ParseTempCell(row[2]),
+                ParsePrecipCell(row[3]),
+                ParsePrecipCell(row[4])
+            ));
+        }
+
+        results = results.OrderByDescending(r => r.Year).ToList();
+
+        _cache.Set(cacheKey, results, RecordCacheTtl);
+        return results;
+    }
+
     // ── HTTP + serialization helpers ──────────────────────────────────────
 
     private async Task<AcisStnDataResponse?> PostStnDataAsync(AcisStnDataRequest request)

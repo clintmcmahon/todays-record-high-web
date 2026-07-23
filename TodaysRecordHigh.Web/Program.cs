@@ -5,6 +5,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 
+// /api/* is all public, read-only station data (no auth/cookies), so allowing any
+// origin is safe — needed for the Expo web build and any browser-based client.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ApiClients", policy =>
+        policy.AllowAnyOrigin().WithMethods("GET").AllowAnyHeader());
+});
+
 // Station list — singleton, loaded once from JSON at startup
 builder.Services.AddSingleton<IStationService, StationService>();
 
@@ -33,6 +41,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseCors("ApiClients");
 app.UseAuthorization();
 
 // Attribute-routed API controllers (e.g. /api/records/today)

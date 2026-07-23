@@ -25,13 +25,15 @@ public class AcisElement
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    // Accepts a string ("dly") or an array ([1,0,0] for yearly stepping)
     [JsonPropertyName("interval")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Interval { get; set; }
+    public object? Interval { get; set; }
 
+    // Accepts a string ("dly") or a number (1)
     [JsonPropertyName("duration")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Duration { get; set; }
+    public object? Duration { get; set; }
 
     [JsonPropertyName("normal")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -121,6 +123,8 @@ public record HeatWaveEvent(
     public string FormattedEnd   => DateTime.TryParse(EndDate,   out var d) ? d.ToString("MMM d, yyyy") : EndDate;
     public string FormattedPeak  => DateTime.TryParse(PeakTempDate, out var d) ? d.ToString("MMM d") : PeakTempDate;
 };
+
+public record OnThisDayRecord(int Year, int? High, int? Low, double? Precip, double? Snow);
 
 public record HeatWaveData(
     int CurrentStreak,

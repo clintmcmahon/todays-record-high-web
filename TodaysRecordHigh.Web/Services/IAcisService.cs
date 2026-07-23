@@ -15,4 +15,5 @@ public interface IAcisService
     Task<WarmSummerNightsData?> GetWarmSummerNightsAsync(string threadexSid);
     Task<PrecipData?> GetPrecipDataAsync(string threadexSid);
     Task<HeatWaveData?> GetHeatWaveDataAsync(string threadexSid);
+    Task<List<OnThisDayRecord>> GetOnThisDayHistoryAsync(string threadexSid, string monthDay);
 }
