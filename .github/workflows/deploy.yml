@@ -16,7 +16,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Publish
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj -c Release -o ./publish
 
       - name: Deploy via rsync
         uses: burnett01/rsync-deployments@6.0.0
