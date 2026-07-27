@@ -30,6 +30,15 @@ builder.Services.AddHttpClient<ICurrentWeatherService, CurrentWeatherService>(cl
     client.Timeout = TimeSpan.FromSeconds(8);
 });
 
+// NWS active alerts — api.weather.gov requires an identifying User-Agent (no API key)
+builder.Services.AddHttpClient<IWeatherAlertsService, WeatherAlertsService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.weather.gov/");
+    client.Timeout = TimeSpan.FromSeconds(8);
+    client.DefaultRequestHeaders.Add("User-Agent", "TodaysRecordHigh.com (https://todaysrecordhigh.com)");
+    client.DefaultRequestHeaders.Add("Accept", "application/geo+json");
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

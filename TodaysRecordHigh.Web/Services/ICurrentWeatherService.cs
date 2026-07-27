@@ -1,6 +1,6 @@
 namespace TodaysRecordHigh.Web.Services;
 
-public record CurrentConditions(double TempF, double FeelsLikeF, DateTime AsOf, string TimezoneAbbr, int WeatherCode, bool IsDay, double? DailyMaxF)
+public record CurrentConditions(double TempF, double FeelsLikeF, DateTime AsOf, string TimezoneAbbr, int WeatherCode, bool IsDay, double? DailyMaxF, double? DewPointF, int? RelativeHumidityPercent)
 {
     public string WeatherEmoji => (WeatherCode, IsDay) switch
     {

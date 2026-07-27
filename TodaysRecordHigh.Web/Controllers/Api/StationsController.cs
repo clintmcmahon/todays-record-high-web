@@ -11,13 +11,15 @@ public class StationsController : ControllerBase
     private readonly IStationService _stationService;
     private readonly IAcisService _acisService;
     private readonly ICurrentWeatherService _weather;
+    private readonly IWeatherAlertsService _alerts;
 
     public StationsController(IStationService stationService, IAcisService acisService,
-        ICurrentWeatherService weather)
+        ICurrentWeatherService weather, IWeatherAlertsService alerts)
     {
         _stationService = stationService;
         _acisService = acisService;
         _weather = weather;
+        _alerts = alerts;
     }
 
     // GET /api/stations?search=denver
@@ -81,10 +83,13 @@ public class StationsController : ControllerBase
         var wxTask = station.Latitude.HasValue && station.Longitude.HasValue
             ? _weather.GetCurrentAsync(station.Latitude.Value, station.Longitude.Value)
             : Task.FromResult<CurrentConditions?>(null);
+        var alertsTask = station.Latitude.HasValue && station.Longitude.HasValue
+            ? _alerts.GetActiveAlertsAsync(station.Latitude.Value, station.Longitude.Value)
+            : Task.FromResult<List<WeatherAlert>>([]);
 
         await Task.WhenAll(recordHighsTask, recordLowsTask, normalMaxTask, normalMinTask,
             porTask, extremesTask, hotDaysTask, ytdTask, warmNightsTask, precipTask,
-            heatWaveTask, onThisDayTask, wxTask);
+            heatWaveTask, onThisDayTask, wxTask, alertsTask);
 
         var records = recordHighsTask.Result;
         var lowRecords = recordLowsTask.Result;
@@ -108,7 +113,8 @@ public class StationsController : ControllerBase
             Precip: ToPrecipDto(precipTask.Result),
             HeatWaves: ToHeatWaveDto(heatWaveTask.Result),
             OnThisDayHistory: onThisDayTask.Result,
-            Current: wxTask.Result
+            Current: wxTask.Result,
+            ActiveAlerts: alertsTask.Result.Select(a => new WeatherAlertDto(a.Event, a.Headline, a.Severity, a.Expires)).ToList()
         );
 
         return Ok(ToDetailDto(station, dateLabel, effectiveMonthDay, acis));
@@ -206,9 +212,12 @@ public record AcisDetailDto(
     PrecipDataDto? Precip,
     HeatWaveDataDto? HeatWaves,
     List<OnThisDayRecord> OnThisDayHistory,
-    CurrentConditions? Current);
+    CurrentConditions? Current,
+    List<WeatherAlertDto> ActiveAlerts);
 
 public record RecordEntryDto(int Temp, string Date);
+
+public record WeatherAlertDto(string Event, string Headline, string Severity, DateTime? Expires);
 
 public record YearCountDto(int Year, int Count);
 

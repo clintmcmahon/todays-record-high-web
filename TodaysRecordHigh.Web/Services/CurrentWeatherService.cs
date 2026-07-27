@@ -29,7 +29,7 @@ public class CurrentWeatherService : ICurrentWeatherService
         try
         {
             var url = $"v1/forecast?latitude={lat:F4}&longitude={lon:F4}" +
-                      "&current=temperature_2m,apparent_temperature,weathercode,is_day" +
+                      "&current=temperature_2m,apparent_temperature,weathercode,is_day,dew_point_2m,relative_humidity_2m" +
                       "&daily=temperature_2m_max" +
                       "&temperature_unit=fahrenheit&timezone=auto&forecast_days=1";
 
@@ -48,6 +48,10 @@ public class CurrentWeatherService : ICurrentWeatherService
             var timeStr     = current.GetProperty("time").GetString() ?? "";
             var weatherCode = current.TryGetProperty("weathercode", out var wcEl) ? wcEl.GetInt32() : 0;
             var isDay       = current.TryGetProperty("is_day", out var idEl) && idEl.GetInt32() == 1;
+            double? dewPoint = current.TryGetProperty("dew_point_2m", out var dpEl) && dpEl.ValueKind == JsonValueKind.Number
+                ? dpEl.GetDouble() : null;
+            int? humidity   = current.TryGetProperty("relative_humidity_2m", out var rhEl) && rhEl.ValueKind == JsonValueKind.Number
+                ? rhEl.GetInt32() : null;
 
             DateTime.TryParse(timeStr, out var asOf);
 
@@ -60,7 +64,7 @@ public class CurrentWeatherService : ICurrentWeatherService
                 dailyMaxF = maxArr[0].ValueKind == JsonValueKind.Number ? maxArr[0].GetDouble() : null;
             }
 
-            var result = new CurrentConditions(temp, feels, asOf, tzAbbr, weatherCode, isDay, dailyMaxF);
+            var result = new CurrentConditions(temp, feels, asOf, tzAbbr, weatherCode, isDay, dailyMaxF, dewPoint, humidity);
             _cache.Set(key, result, CacheTtl);
             return result;
         }
