@@ -247,33 +247,18 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out List<(int, int)>? cached) && cached is not null)
             return cached;
 
-        // Fetch all daily maxt from POR through yesterday (includes current year so far).
+        // All daily maxt from POR through yesterday (includes current year so far).
         // cnt_gt90 reduce is not supported on Threadex via ACIS, so we compute counts here.
         var today = DateTime.Now;
-        var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
-        var request = new AcisStnDataRequest
-        {
-            Sid = threadexSid,
-            SDate = "por",
-            EDate = edate,
-            Elems = [new AcisElement { Name = "maxt" }]
-        };
-
-        var response = await PostStnDataAsync(request);
-        if (response?.Data is null)
+        var daily = await GetDailyMaxtAsync(threadexSid);
+        if (daily.Count == 0)
             return [];
 
         var byYear = new Dictionary<int, int>();
-        foreach (var row in response.Data)
+        foreach (var (date, maxT) in daily)
         {
-            if (row.Count < 2) continue;
-            var dateStr = row[0].GetString();
-            if (dateStr is null || dateStr.Length < 4) continue;
-            if (!int.TryParse(dateStr[..4], out var year)) continue;
-
-            var val = ParseDouble(row[1]);
-            if (val.HasValue && val.Value >= thresholdF)
-                byYear[year] = byYear.GetValueOrDefault(year) + 1;
+            if (maxT.HasValue && maxT.Value >= thresholdF)
+                byYear[date.Year] = byYear.GetValueOrDefault(date.Year) + 1;
         }
 
         // Guarantee current year appears even when it has zero qualifying days so far
@@ -812,6 +797,343 @@ public class AcisService : IAcisService
         results = results.OrderByDescending(r => r.Year).ToList();
 
         _cache.Set(cacheKey, results, RecordCacheTtl);
+        return results;
+    }
+
+    // ── Monthly mean temperatures across the period of record ─────────────
+
+    // A month needs at least this many observed days to be ranked. Ranking a month
+    // built from a handful of days would put partial months at the top of the list.
+    private const int MaxMissingDaysPerMonth = 3;
+
+    public async Task<List<MonthlyMean>> GetMonthlyMeansAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:monthlymeans:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out List<MonthlyMean>? cached) && cached is not null)
+            return cached;
+
+        // "mcnt" adds a missing-day count alongside each mean, so partial months
+        // (the in-progress one, and gaps early in the record) can be filtered out.
+        var request = new AcisStnDataRequest
+        {
+            Sid = threadexSid,
+            SDate = "por",
+            EDate = "por",
+            Elems =
+            [
+                new AcisElement
+                {
+                    Name = "avgt",
+                    Interval = new[] { 0, 1 },
+                    Duration = "mly",
+                    Reduce = new AcisReduce { Reduce = "mean", Add = "mcnt" }
+                }
+            ]
+        };
+
+        var response = await PostStnDataAsync(request);
+        if (response?.Data is null)
+            return [];
+
+        var results = new List<MonthlyMean>();
+        foreach (var row in response.Data)
+        {
+            if (row.Count < 2) continue;
+
+            var key = row[0].GetString();
+            if (key is null || key.Length < 7) continue;
+            if (!int.TryParse(key[..4], out var year)) continue;
+            if (!int.TryParse(key.Substring(5, 2), out var month)) continue;
+
+            // With "add": "mcnt" the cell is ["78.85", 0]; without it, a bare value.
+            var cell = row[1];
+            double? avg;
+            int missing = 0;
+            if (cell.ValueKind == JsonValueKind.Array && cell.GetArrayLength() >= 2)
+            {
+                var items = cell.EnumerateArray().ToList();
+                avg = ParseDouble(items[0]);
+                missing = ParseInt(items[1]) ?? 0;
+            }
+            else
+            {
+                avg = ParseDouble(cell);
+            }
+
+            if (avg.HasValue && missing <= MaxMissingDaysPerMonth)
+                results.Add(new MonthlyMean(year, month, avg.Value));
+        }
+
+        _cache.Set(cacheKey, results, TimeSpan.FromHours(12));
+        return results;
+    }
+
+    // ── Month in Review ───────────────────────────────────────────────────
+
+    public async Task<MonthInReview?> GetMonthInReviewAsync(
+        string threadexSid, IReadOnlyList<Station> peerStations)
+    {
+        var monthlyMeans = await GetMonthlyMeansAsync(threadexSid);
+        if (monthlyMeans.Count == 0)
+            return null;
+
+        // Review the most recent complete month. The in-progress month is already
+        // excluded by the missing-day filter, so this is simply the latest entry
+        // that starts before the current one.
+        var now = DateTime.Now;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+        var target = monthlyMeans
+            .Where(m => new DateTime(m.Year, m.Month, 1) < currentMonthStart)
+            .OrderByDescending(m => m.Year).ThenByDescending(m => m.Month)
+            .FirstOrDefault();
+
+        if (target is null)
+            return null;
+
+        var cacheKey = $"acis:monthreview:{threadexSid}:{target.Year}-{target.Month:00}";
+        if (_cache.TryGetValue(cacheKey, out MonthInReview? cachedReview) && cachedReview is not null)
+            return cachedReview;
+
+        // ── Rankings ──────────────────────────────────────────────────────
+        var warmerAnywhere = monthlyMeans.Count(m => m.AvgTemp > target.AvgTemp);
+        var rankAllMonths  = warmerAnywhere + 1;
+
+        var sameMonth = monthlyMeans.Where(m => m.Month == target.Month).ToList();
+        var rankSameMonth = sameMonth.Count(m => m.AvgTemp > target.AvgTemp) + 1;
+
+        var topMonths = monthlyMeans
+            .OrderByDescending(m => m.AvgTemp).Take(10).ToList();
+        var topSameMonths = sameMonth
+            .OrderByDescending(m => m.AvgTemp).Take(10).ToList();
+        var sameMonthHistory = sameMonth
+            .OrderBy(m => m.Year).ToList();
+
+        // 1991–2020 average for this calendar month, matching the normals period
+        // used elsewhere on the page.
+        // Kept at full precision — rounding happens at display time so rankings and
+        // departures are computed from the underlying values.
+        var baseline = sameMonth.Where(m => m.Year is >= 1991 and <= 2020).ToList();
+        double? normalAvg = baseline.Count >= 15
+            ? baseline.Average(m => m.AvgTemp)
+            : null;
+
+        // ── Daily-series stats: 90° streaks and the year's peak ───────────
+        var daily = await GetDailyMaxtAsync(threadexSid);
+
+        const int hotThreshold = 90;
+
+        var monthStart = new DateTime(target.Year, target.Month, 1);
+        var monthEnd   = monthStart.AddMonths(1).AddDays(-1);
+
+        // Streaks are scoped to the calendar month and compared against the same month
+        // in other years. A run spilling in from May is not a July statistic, and an
+        // unfinished run would be measured against completed ones.
+        var streakByYear = daily
+            .Where(d => d.Date.Month == target.Month)
+            .GroupBy(d => d.Date.Year)
+            .Select(g => BuildStreaks(g.ToList(), hotThreshold)
+                .OrderByDescending(s => s.Days).ThenByDescending(s => s.PeakTemp)
+                .FirstOrDefault())
+            .Where(s => s is not null)
+            .Select(s => s!)
+            .ToList();
+
+        var longestInMonth = streakByYear.FirstOrDefault(s => s.Year == target.Year);
+
+        var longestEver = streakByYear
+            .OrderByDescending(s => s.Days).ThenByDescending(s => s.PeakTemp)
+            .FirstOrDefault();
+
+        // "Longest since YYYY" — the most recent earlier year whose run in this same
+        // month was longer, which is what makes a streak newsworthy. Ties are tracked
+        // separately so a matched streak is never reported as an outright record.
+        int? lastYearWithLongerStreak = null;
+        int? lastYearTiedStreak = null;
+        if (longestInMonth is not null)
+        {
+            var prior = streakByYear.Where(s => s.Year < target.Year).ToList();
+
+            var longer = prior.Where(s => s.Days > longestInMonth.Days).ToList();
+            if (longer.Count > 0) lastYearWithLongerStreak = longer.Max(s => s.Year);
+
+            var tied = prior.Where(s => s.Days == longestInMonth.Days).ToList();
+            if (tied.Count > 0) lastYearTiedStreak = tied.Max(s => s.Year);
+        }
+
+        var hotDaysInMonth = daily.Count(d =>
+            d.Date >= monthStart && d.Date <= monthEnd &&
+            d.MaxT.HasValue && d.MaxT.Value >= hotThreshold);
+
+        // 90°F is only a meaningful yardstick where it actually happens, and a single
+        // hot day is not a streak worth a callout.
+        var totalHotDaysEver = daily.Count(d => d.MaxT.HasValue && d.MaxT.Value >= hotThreshold);
+        var showStreak = totalHotDaysEver >= 20 && longestInMonth is { Days: >= 2 };
+
+        // ── Year's peak high and the milestone it cleared ─────────────────
+        var thisYear = daily.Where(d => d.Date.Year == target.Year && d.MaxT.HasValue).ToList();
+        int? yearPeak = null;
+        string? yearPeakDate = null;
+        if (thisYear.Count > 0)
+        {
+            var peakDay = thisYear.OrderByDescending(d => d.MaxT!.Value).ThenBy(d => d.Date).First();
+            yearPeak = (int)Math.Round(peakDay.MaxT!.Value);
+            yearPeakDate = peakDay.Date.ToString("yyyy-MM-dd");
+        }
+
+        int? milestone = yearPeak switch
+        {
+            >= 100 => 100,
+            >= 95  => 95,
+            >= 90  => 90,
+            _      => null
+        };
+
+        int? lastYearAtMilestone = null;
+        if (milestone.HasValue)
+        {
+            var priorYears = daily
+                .Where(d => d.Date.Year < target.Year
+                         && d.MaxT.HasValue && d.MaxT.Value >= milestone.Value)
+                .Select(d => d.Date.Year)
+                .ToList();
+            if (priorYears.Count > 0)
+                lastYearAtMilestone = priorYears.Max();
+        }
+
+        // ── Regional peers ────────────────────────────────────────────────
+        var peers = await GetPeerRanksAsync(peerStations, target.Year, target.Month);
+
+        var review = new MonthInReview(
+            Year:                     target.Year,
+            Month:                    target.Month,
+            AvgTemp:                  target.AvgTemp,
+            NormalAvgTemp:            normalAvg,
+            RankAllMonths:            rankAllMonths,
+            TotalMonths:              monthlyMeans.Count,
+            RankSameMonth:            rankSameMonth,
+            TotalSameMonths:          sameMonth.Count,
+            WarmestMonthEver:         topMonths.FirstOrDefault(),
+            WarmestSameMonthEver:     topSameMonths.FirstOrDefault(),
+            TopMonths:                topMonths,
+            TopSameMonths:            topSameMonths,
+            SameMonthHistory:         sameMonthHistory,
+            LongestStreakInMonth:     longestInMonth,
+            LongestStreakEver:        longestEver,
+            LastYearWithLongerStreak: lastYearWithLongerStreak,
+            LastYearTiedStreak:       lastYearTiedStreak,
+            HotDayThreshold:          hotThreshold,
+            HotDaysInMonth:           hotDaysInMonth,
+            ShowStreak:               showStreak,
+            YearPeakHigh:             yearPeak,
+            YearPeakHighDate:         yearPeakDate,
+            PeakMilestone:            milestone,
+            LastYearAtMilestone:      lastYearAtMilestone,
+            Peers:                    peers);
+
+        // Only changes once a month, but keep it short enough that a station whose
+        // data lands late still refreshes the same day.
+        _cache.Set(cacheKey, review, TimeSpan.FromHours(12));
+        return review;
+    }
+
+    private async Task<List<PeerMonthRank>> GetPeerRanksAsync(
+        IReadOnlyList<Station> peerStations, int year, int month)
+    {
+        if (peerStations.Count == 0)
+            return [];
+
+        var tasks = peerStations
+            .Where(s => s.HasAcisData)
+            .Select(async station =>
+            {
+                var means = await GetMonthlyMeansAsync(station.ThreadexSid!);
+                var entry = means.FirstOrDefault(m => m.Year == year && m.Month == month);
+                if (entry is null) return null;
+
+                var sameMonth = means.Where(m => m.Month == month).ToList();
+                var rank = sameMonth.Count(m => m.AvgTemp > entry.AvgTemp) + 1;
+
+                return new PeerMonthRank(
+                    station.City, station.State, station.Slug,
+                    entry.AvgTemp, rank, sameMonth.Count);
+            })
+            .ToList();
+
+        var results = await Task.WhenAll(tasks);
+        return results.Where(r => r is not null).Select(r => r!).ToList();
+    }
+
+    /// <summary>
+    /// Runs of consecutive calendar days at or above <paramref name="thresholdF"/>.
+    /// A missing observation or a gap in the record ends the run.
+    /// </summary>
+    private static List<HotStreak> BuildStreaks(
+        List<(DateTime Date, double? MaxT)> daily, int thresholdF)
+    {
+        var streaks = new List<HotStreak>();
+        var run = new List<(DateTime Date, double MaxT)>();
+
+        void Flush()
+        {
+            if (run.Count == 0) return;
+            streaks.Add(new HotStreak(
+                Days:      run.Count,
+                StartDate: run[0].Date.ToString("yyyy-MM-dd"),
+                EndDate:   run[^1].Date.ToString("yyyy-MM-dd"),
+                Year:      run[0].Date.Year,
+                PeakTemp:  (int)Math.Round(run.Max(r => r.MaxT))));
+            run.Clear();
+        }
+
+        foreach (var (date, maxT) in daily)
+        {
+            var isHot = maxT.HasValue && maxT.Value >= thresholdF;
+            var isConsecutive = run.Count == 0 || run[^1].Date.AddDays(1) == date;
+
+            if (isHot && isConsecutive)
+            {
+                run.Add((date, maxT!.Value));
+            }
+            else
+            {
+                Flush();
+                if (isHot) run.Add((date, maxT!.Value));
+            }
+        }
+        Flush();
+
+        return streaks;
+    }
+
+    /// <summary>Daily maximum temperatures for the full period of record through yesterday.</summary>
+    private async Task<List<(DateTime Date, double? MaxT)>> GetDailyMaxtAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:dailymaxt:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out List<(DateTime, double?)>? cached) && cached is not null)
+            return cached;
+
+        var edate = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        var request = new AcisStnDataRequest
+        {
+            Sid = threadexSid,
+            SDate = "por",
+            EDate = edate,
+            Elems = [new AcisElement { Name = "maxt" }]
+        };
+
+        var response = await PostStnDataAsync(request);
+        if (response?.Data is null)
+            return [];
+
+        var results = new List<(DateTime, double?)>(response.Data.Count);
+        foreach (var row in response.Data)
+        {
+            if (row.Count < 2) continue;
+            if (!DateTime.TryParse(row[0].GetString(), out var date)) continue;
+            results.Add((date, ParseDouble(row[1])));
+        }
+
+        _cache.Set(cacheKey, results, TimeSpan.FromHours(3));
         return results;
     }
 

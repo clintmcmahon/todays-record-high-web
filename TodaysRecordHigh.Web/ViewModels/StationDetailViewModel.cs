@@ -37,6 +37,9 @@ public class StationDetailViewModel
     public PrecipData? Precip { get; set; }
     public HeatWaveData? HeatWaves { get; set; }
 
+    // ── Month in Review (most recently completed month) ──────────────────
+    public MonthInReview? MonthReview { get; set; }
+
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }
 

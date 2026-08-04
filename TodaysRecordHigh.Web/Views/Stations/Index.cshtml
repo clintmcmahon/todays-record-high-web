@@ -21,6 +21,12 @@
     var heatWaveFreqJson    = JsonSerializer.Serialize(Model.HeatWaves?.EventsPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
     var dangerousNightsJson = JsonSerializer.Serialize(Model.HeatWaves?.DangerousNightsPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
     var avgHighDecadeJson   = JsonSerializer.Serialize(Model.HeatWaves?.AvgHighByDecade.Select(x => new { label = x.Decade, avgHigh = x.AvgHigh }) ?? []);
+    var mr = Model.MonthReview;
+    var monthHistoryJson = JsonSerializer.Serialize(mr?.SameMonthHistory.Select(x => new {
+        year = x.Year, avg = TodaysRecordHigh.Web.Models.TempFormat.Round1(x.AvgTemp)
+    }) ?? []);
+    var monthNormalJson = mr?.NormalAvgTemp is { } n ? TodaysRecordHigh.Web.Models.TempFormat.Round1(n).ToString("F1") : "null";
+
     var currentYear = DateTime.Now.Year;
     var currentMonth = DateTime.Now.Month;
     var monthName = DateTime.Now.ToString("MMMM");
@@ -186,6 +192,13 @@
                             type="button" role="tab">Precipitation</button>
                 </li>
             }
+            @if (mr is not null)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-month"
+                            type="button" role="tab">Month in Review</button>
+                </li>
+            }
         </ul>
 
         <div class="tab-content" id="stationTabContent">
@@ -215,7 +228,7 @@
                                 @if (Model.NormalMaxTemp.HasValue)
                                 {
                                     var dep = Model.RecordHighDepartureFromNormal!.Value;
-                                    <span class="badge bg-danger bg-opacity-20 text-danger normal-badge">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger normal-badge">
                                         @(dep >= 0 ? "+" : "")@dep.ToString("F0")° from @Model.NormalMaxTemp.Value.ToString("F0")° normal
                                     </span>
                                 }
@@ -238,7 +251,7 @@
                                 @if (Model.NormalMinTemp.HasValue)
                                 {
                                     var dep = Model.RecordLowDepartureFromNormal!.Value;
-                                    <span class="badge bg-primary bg-opacity-20 text-primary normal-badge">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary normal-badge">
                                         @(dep >= 0 ? "+" : "")@dep.ToString("F0")° from @Model.NormalMinTemp.Value.ToString("F0")° normal
                                     </span>
                                 }
@@ -816,6 +829,292 @@
         }
         </div><!-- /#tab-precipitation -->
 
+        <!-- ══════════════════════════════════════════════════════════════════
+             MONTH IN REVIEW TAB
+        ═══════════════════════════════════════════════════════════════════ -->
+        @if (mr is not null)
+        {
+            <div class="tab-pane fade" id="tab-month" role="tabpanel">
+
+            <!-- Headline -->
+            <section class="mb-4 pt-3">
+                <p class="text-uppercase fw-semibold text-muted small mb-3">
+                    Month in Review — <strong class="text-dark">@mr.Label</strong>
+                </p>
+                <div class="card border-0 @(mr.IsNotableAllTime ? "bg-danger bg-opacity-10" : "bg-light")">
+                    <div class="card-body text-center py-4">
+                        <div class="stat-hero-temp @(mr.IsNotableAllTime ? "text-danger" : "")">@mr.AvgTempDisplay°F</div>
+                        <p class="text-muted mt-2 mb-2 small">Average temperature &middot; @mr.Label</p>
+                        <p class="h5 fw-bold mb-2 @(mr.IsNotableAllTime ? "text-danger" : "")">
+                            @mr.RankAllMonthsOrdinal-warmest month on record
+                        </p>
+                        <p class="small text-muted mb-2">
+                            @mr.RankSameMonthOrdinal-warmest @mr.MonthName of @mr.TotalSameMonths on record
+                        </p>
+                        @if (mr.DepartureFromNormal.HasValue)
+                        {
+                            var dep = mr.DepartureFromNormal.Value;
+                            <span class="badge @(dep >= 0 ? "bg-danger" : "bg-primary") bg-opacity-10 @(dep >= 0 ? "text-danger" : "text-primary") normal-badge">
+                                @mr.DepartureDisplay° vs. @mr.NormalAvgDisplay° average (1991–2020)
+                            </span>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <!-- Key stats -->
+            <section class="mb-4">
+                <div class="row g-3">
+                    @if (mr.WarmestMonthEver is not null)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 rounded" style="background:#fff5f5;border:1px solid #fecaca;">
+                                <div class="fw-bold fs-5 text-danger">@mr.WarmestMonthEver.Display°F</div>
+                                <div class="small text-muted mt-1">Warmest month ever</div>
+                                <div class="small text-muted">@mr.WarmestMonthEver.Label</div>
+                            </div>
+                        </div>
+                    }
+                    @if (mr.WarmestSameMonthEver is not null)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold fs-5">@mr.WarmestSameMonthEver.Display°F</div>
+                                <div class="small text-muted mt-1">Warmest @mr.MonthName ever</div>
+                                <div class="small text-muted">@mr.WarmestSameMonthEver.Year</div>
+                            </div>
+                        </div>
+                    }
+                    @if (mr.ShowStreak)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="fw-bold fs-5">@mr.HotDaysInMonth</div>
+                                <div class="small text-muted mt-1">Days ≥ @mr.HotDayThreshold°F</div>
+                                <div class="small text-muted">in @mr.MonthName</div>
+                            </div>
+                        </div>
+                    }
+                    @if (mr.YearPeakHigh.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="text-center p-3 rounded" style="background:#fefce8;border:1px solid #fde047;">
+                                <div class="fw-bold fs-5" style="color:#854d0e;">@mr.YearPeakHigh°F</div>
+                                <div class="small text-muted mt-1">Hottest of @mr.Year</div>
+                                @if (mr.YearPeakHighDate is not null && DateTime.TryParse(mr.YearPeakHighDate, out var pk))
+                                {
+                                    <div class="small text-muted">@pk.ToString("MMM d")</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <!-- Streak + milestone callouts -->
+            @if (mr.ShowStreak && mr.LongestStreakInMonth is not null)
+            {
+                var streak = mr.LongestStreakInMonth;
+                <section class="mb-4">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h3 class="h6 fw-semibold mb-2">Longest @mr.HotDayThreshold°F Streak in @mr.MonthName</h3>
+                            <p class="mb-2">
+                                <strong class="fs-5">@streak.Days consecutive @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(streak.Days, "day")</strong>
+                                with highs of at least @mr.HotDayThreshold°F
+                                <span class="text-muted">(@streak.FormattedRange, peaking at @streak.PeakTemp°F)</span>
+                            </p>
+                            @if (mr.StreakIsMonthRecord)
+                            {
+                                <p class="small text-danger fw-semibold mb-0">
+                                    The longest @mr.MonthName streak in @Model.Station.City&rsquo;s recorded history.
+                                </p>
+                            }
+                            else if (mr.LastYearTiedStreak.HasValue
+                                     && (!mr.LastYearWithLongerStreak.HasValue
+                                         || mr.LastYearTiedStreak > mr.LastYearWithLongerStreak))
+                            {
+                                <p class="small text-muted mb-0">
+                                    Ties the longest @mr.MonthName streak since <strong>@mr.LastYearTiedStreak</strong>
+                                    (@mr.YearsSinceTiedStreak @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceTiedStreak!.Value, "year")).
+                                    @if (mr.LongestStreakEver is not null && mr.LongestStreakEver.Days > streak.Days)
+                                    {
+                                        <text>The @mr.MonthName record is @mr.LongestStreakEver.Days days, set in @mr.LongestStreakEver.Year.</text>
+                                    }
+                                </p>
+                            }
+                            else if (mr.LastYearWithLongerStreak.HasValue)
+                            {
+                                <p class="small text-muted mb-0">
+                                    The longest @mr.MonthName streak since <strong>@mr.LastYearWithLongerStreak</strong>
+                                    (@mr.YearsSinceLongerStreak @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceLongerStreak!.Value, "year")).
+                                    @if (mr.LongestStreakEver is not null)
+                                    {
+                                        <text>The @mr.MonthName record is @mr.LongestStreakEver.Days days, set in @mr.LongestStreakEver.Year.</text>
+                                    }
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </section>
+            }
+
+            @* Only worth a callout when the milestone is genuinely infrequent — in Phoenix,
+               "first time since last year" is noise. *@
+            @if (mr.PeakMilestone.HasValue && mr.YearPeakHigh.HasValue
+                 && (!mr.LastYearAtMilestone.HasValue || mr.YearsSinceMilestone >= 3))
+            {
+                <section class="mb-4">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h3 class="h6 fw-semibold mb-2">@mr.PeakMilestone°F Milestone</h3>
+                            @if (mr.LastYearAtMilestone.HasValue)
+                            {
+                                <p class="small text-muted mb-0">
+                                    @Model.Station.City reached <strong>@mr.YearPeakHigh°F</strong> in @mr.Year —
+                                    the first time it hit @mr.PeakMilestone°F since
+                                    <strong>@mr.LastYearAtMilestone</strong>
+                                    (@mr.YearsSinceMilestone @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceMilestone!.Value, "year")).
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="small text-muted mb-0">
+                                    @Model.Station.City reached <strong>@mr.YearPeakHigh°F</strong> in @mr.Year —
+                                    the first time it has ever hit @mr.PeakMilestone°F on record.
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </section>
+            }
+
+            <hr class="section-divider" />
+
+            <!-- Every year's average for this calendar month -->
+            @if (mr.SameMonthHistory.Count > 3)
+            {
+                <section class="mb-4">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h3 class="h6 fw-semibold mb-1">Average @mr.MonthName Temperature by Year</h3>
+                            <p class="text-muted small mb-3">
+                                @mr.SameMonthHistory.First().Year–@mr.SameMonthHistory.Last().Year &middot;
+                                @mr.Year highlighted
+                            </p>
+                            <div class="chart-container"><canvas id="monthHistoryChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+                <hr class="section-divider" />
+            }
+
+            <!-- Warmest months leaderboards -->
+            <section class="mb-4">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h2 class="h6 fw-bold mb-3">Warmest @(mr.MonthName)s on Record</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                                <thead class="table-danger">
+                                    <tr>
+                                        <th class="text-center" style="width:2.5rem">#</th>
+                                        <th>Year</th>
+                                        <th class="text-end">Avg Temp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @for (var i = 0; i < mr.TopSameMonths.Count; i++)
+                                {
+                                    var m = mr.TopSameMonths[i];
+                                    var isTarget = m.Year == mr.Year;
+                                    <tr class="@(isTarget ? "table-warning fw-semibold" : "")">
+                                        <td class="text-center text-muted">@(i + 1)</td>
+                                        <td>@m.Year</td>
+                                        <td class="text-end">@m.Display°F</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h2 class="h6 fw-bold mb-3">Warmest Months on Record (Any Month)</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                                <thead class="table-danger">
+                                    <tr>
+                                        <th class="text-center" style="width:2.5rem">#</th>
+                                        <th>Month</th>
+                                        <th class="text-end">Avg Temp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @for (var i = 0; i < mr.TopMonths.Count; i++)
+                                {
+                                    var m = mr.TopMonths[i];
+                                    var isTarget = m.Year == mr.Year && m.Month == mr.Month;
+                                    <tr class="@(isTarget ? "table-warning fw-semibold" : "")">
+                                        <td class="text-center text-muted">@(i + 1)</td>
+                                        <td>@m.Label</td>
+                                        <td class="text-end">@m.Display°F</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Regional context -->
+            @if (mr.Peers.Count > 0)
+            {
+                <hr class="section-divider" />
+                <section class="mb-4">
+                    <h2 class="h6 fw-bold mb-1">Nearby Stations — @mr.Label</h2>
+                    <p class="text-muted small mb-3">How the same month ranked at the closest reporting stations</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Station</th>
+                                    <th class="text-end">Avg Temp</th>
+                                    <th class="text-end">@mr.MonthName Rank</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="table-warning fw-semibold">
+                                    <td>@Model.Station.City, @Model.Station.State</td>
+                                    <td class="text-end">@mr.AvgTempDisplay°F</td>
+                                    <td class="text-end">@mr.RankSameMonthOrdinal of @mr.TotalSameMonths</td>
+                                </tr>
+                            @foreach (var p in mr.Peers)
+                            {
+                                <tr>
+                                    <td><a href="/stations/@p.Slug">@p.City, @p.State</a></td>
+                                    <td class="text-end">@p.Display°F</td>
+                                    <td class="text-end">
+                                        @p.RankOrdinal of @p.TotalSameMonths
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            }
+
+            <section class="p-4 bg-light rounded small text-muted mt-2">
+                <strong>About this data.</strong> Monthly averages are the mean of daily average temperatures,
+                computed from NOAA Threadex records via RCC ACIS. Months missing more than three days of
+                observations are excluded from the rankings, so the in-progress month never appears.
+                Rankings cover @mr.TotalMonths complete months on record.
+            </section>
+
+            </div><!-- /#tab-month -->
+        }
+
         </div><!-- /.tab-content -->
     }
 
@@ -834,14 +1133,94 @@
     // ── Lazy-init: all charts are in non-default tabs ───────────────────
     let heatInited   = false;
     let precipInited = false;
+    let monthInited  = false;
 
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
         btn.addEventListener('shown.bs.tab', e => {
             const target = e.target.getAttribute('data-bs-target');
             if (target === '#tab-heat'          && !heatInited)   { heatInited   = true; initHeatCharts(); }
             if (target === '#tab-precipitation' && !precipInited) { precipInited = true; initPrecipCharts(); }
+            if (target === '#tab-month'         && !monthInited)  { monthInited  = true; initMonthChart(); }
         });
     });
+
+    // ── Month in Review ──────────────────────────────────────────────────
+    function initMonthChart() {
+        const monthData   = @Html.Raw(monthHistoryJson);
+        const monthNormal = @Html.Raw(monthNormalJson);
+        const targetYear  = @(mr?.Year ?? 0);
+        const ctx = document.getElementById('monthHistoryChart');
+        if (!ctx || !monthData.length) return;
+
+        const temps  = monthData.map(d => d.avg);
+        const minT   = Math.min(...temps), maxT = Math.max(...temps);
+        const colors = monthData.map(d => {
+            if (d.year === targetYear) return 'rgba(234,179,8,0.95)';
+            // Cool blue → hot red across the station's own range for this month
+            const t = (d.avg - minT) / Math.max(maxT - minT, 0.1);
+            const r = Math.round(59  + t * 180);
+            const g = Math.round(130 - t * 80);
+            const b = Math.round(246 - t * 190);
+            return `rgba(${r},${g},${b},0.8)`;
+        });
+
+        const datasets = [{
+            type: 'bar',
+            label: 'Average temperature (°F)',
+            data: temps,
+            backgroundColor: colors,
+            borderWidth: 0,
+            borderRadius: 2,
+            order: 2
+        }];
+
+        if (monthNormal !== null) {
+            datasets.push({
+                type: 'line',
+                label: '1991–2020 average',
+                data: monthData.map(() => monthNormal),
+                borderColor: 'rgba(15,23,42,0.55)',
+                borderDash: [6, 4],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                order: 1
+            });
+        }
+
+        new Chart(ctx, {
+            data: { labels: monthData.map(d => d.year), datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: monthNormal !== null, labels: { boxWidth: 12, filter: i => i.datasetIndex === 1 } },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.datasetIndex === 1) return `1991–2020 average: ${monthNormal}°F`;
+                                const d = monthData[item.dataIndex];
+                                const lines = [`Average: ${d.avg.toFixed(1)}°F`];
+                                if (monthNormal !== null) {
+                                    const dep = d.avg - monthNormal;
+                                    lines.push(`${dep >= 0 ? '+' : ''}${dep.toFixed(1)}°F vs. average`);
+                                }
+                                return lines;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        ticks: { callback: v => v + '°' },
+                        // Bars start well below the data so year-to-year differences stay legible
+                        min: Math.floor((minT - 2) / 5) * 5
+                    }
+                }
+            }
+        });
+    }
 
     // ── Heat Charts ──────────────────────────────────────────────────────
     function initHeatCharts() {

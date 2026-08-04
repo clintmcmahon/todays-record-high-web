@@ -43,6 +43,11 @@ public class AcisElement
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AcisSmry? Smry { get; set; }
 
+    // Server-side aggregation over an interval (e.g. monthly means)
+    [JsonPropertyName("reduce")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AcisReduce? Reduce { get; set; }
+
     [JsonPropertyName("smry_only")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? SmryOnly { get; set; }
@@ -51,6 +56,17 @@ public class AcisElement
     [JsonPropertyName("groupby")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? GroupBy { get; set; }
+}
+
+public class AcisReduce
+{
+    [JsonPropertyName("reduce")]
+    public string Reduce { get; set; } = string.Empty;
+
+    // "mcnt" appends a missing-day count to each reduced value
+    [JsonPropertyName("add")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Add { get; set; }
 }
 
 public class AcisSmry
@@ -125,6 +141,124 @@ public record HeatWaveEvent(
 };
 
 public record OnThisDayRecord(int Year, int? High, int? Low, double? Precip, double? Snow);
+
+// ── Month in Review ────────────────────────────────────────────────────────
+
+public static class TempFormat
+{
+    /// <summary>
+    /// One decimal place, rounding halves up. Math.Round's default banker's rounding
+    /// turns a 78.85° month into "78.8", which reads as wrong next to published figures.
+    /// </summary>
+    public static double Round1(double v) => Math.Round(v, 1, MidpointRounding.AwayFromZero);
+
+    public static string Temp1(double v) => Round1(v).ToString("F1");
+}
+
+public record MonthlyMean(int Year, int Month, double AvgTemp)
+{
+    public string Label      => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
+    public string ShortLabel => new DateTime(Year, Month, 1).ToString("MMM yyyy");
+    public string MonthName  => new DateTime(Year, Month, 1).ToString("MMMM");
+    public string Display    => TempFormat.Temp1(AvgTemp);
+}
+
+public record HotStreak(int Days, string StartDate, string EndDate, int Year, int PeakTemp)
+{
+    public string FormattedRange
+    {
+        get
+        {
+            if (!DateTime.TryParse(StartDate, out var s) || !DateTime.TryParse(EndDate, out var e))
+                return $"{StartDate} – {EndDate}";
+            if (s.Date == e.Date)
+                return $"{s:MMM} {s.Day}, {e:yyyy}";
+            return s.Month == e.Month
+                ? $"{s:MMM} {s.Day}–{e.Day}, {e:yyyy}"
+                : $"{s:MMM} {s.Day} – {e:MMM} {e.Day}, {e:yyyy}";
+        }
+    }
+}
+
+public record PeerMonthRank(
+    string City, string State, string Slug,
+    double AvgTemp, int RankSameMonth, int TotalSameMonths)
+{
+    public string Display     => TempFormat.Temp1(AvgTemp);
+    public string RankOrdinal => MonthInReview.Ordinal(RankSameMonth);
+}
+
+public record MonthInReview(
+    int Year,
+    int Month,
+    double AvgTemp,
+    double? NormalAvgTemp,              // 1991–2020 mean for this calendar month
+    int RankAllMonths,                  // rank vs. every month on record (1 = warmest)
+    int TotalMonths,
+    int RankSameMonth,                  // rank vs. the same calendar month only
+    int TotalSameMonths,
+    MonthlyMean? WarmestMonthEver,
+    MonthlyMean? WarmestSameMonthEver,
+    List<MonthlyMean> TopMonths,        // top 10, any calendar month
+    List<MonthlyMean> TopSameMonths,    // top 10, this calendar month
+    List<MonthlyMean> SameMonthHistory, // every year's value for this calendar month
+    HotStreak? LongestStreakInMonth,
+    HotStreak? LongestStreakEver,
+    int? LastYearWithLongerStreak,      // most recent prior year beating this month's streak
+    int? LastYearTiedStreak,            // most recent prior year matching it exactly
+    int HotDayThreshold,                // °F, fixed at 90 where meaningful
+    int HotDaysInMonth,
+    bool ShowStreak,                    // false for stations that rarely reach the threshold
+    int? YearPeakHigh,
+    string? YearPeakHighDate,
+    int? PeakMilestone,                 // 100 / 95 / 90, whichever the year's peak cleared
+    int? LastYearAtMilestone,
+    List<PeerMonthRank> Peers)
+{
+    public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
+    public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
+
+    public double? DepartureFromNormal =>
+        NormalAvgTemp.HasValue ? TempFormat.Round1(AvgTemp - NormalAvgTemp.Value) : null;
+
+    public string AvgTempDisplay    => TempFormat.Temp1(AvgTemp);
+    public string? NormalAvgDisplay => NormalAvgTemp.HasValue ? TempFormat.Temp1(NormalAvgTemp.Value) : null;
+
+    /// <summary>Departure with an explicit sign, e.g. "+4.8".</summary>
+    public string? DepartureDisplay => DepartureFromNormal is { } d
+        ? $"{(d >= 0 ? "+" : "")}{d.ToString("F1")}" : null;
+
+    /// <summary>True when this month lands in the top 10 of every month on record.</summary>
+    public bool IsNotableAllTime => RankAllMonths <= 10;
+
+    public string RankAllMonthsOrdinal  => Ordinal(RankAllMonths);
+    public string RankSameMonthOrdinal  => Ordinal(RankSameMonth);
+
+    public int? YearsSinceLongerStreak =>
+        LastYearWithLongerStreak.HasValue ? Year - LastYearWithLongerStreak.Value : null;
+
+    public int? YearsSinceTiedStreak =>
+        LastYearTiedStreak.HasValue ? Year - LastYearTiedStreak.Value : null;
+
+    public int? YearsSinceMilestone =>
+        LastYearAtMilestone.HasValue ? Year - LastYearAtMilestone.Value : null;
+
+    /// <summary>No earlier year matched or beat this month's streak.</summary>
+    public bool StreakIsMonthRecord =>
+        LongestStreakInMonth is not null
+        && !LastYearWithLongerStreak.HasValue
+        && !LastYearTiedStreak.HasValue;
+
+    public static string Pluralize(int n, string word) => n == 1 ? word : word + "s";
+
+    public static string Ordinal(int n)
+    {
+        var suffix = (n % 100) is >= 11 and <= 13
+            ? "th"
+            : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
+        return $"{n}{suffix}";
+    }
+}
 
 public record HeatWaveData(
     int CurrentStreak,
