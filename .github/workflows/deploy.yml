@@ -28,10 +28,28 @@ jobs:
           remote_user: ${{ secrets.DEPLOY_USER }}
           remote_key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Restart service
+      - name: Write app config and restart service
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          script: sudo systemctl restart todaysrecordhigh
+          envs: MAPBOX_TOKEN
+          # The drop-in lives outside /var/www, so the rsync --delete above can't
+          # clobber it. Env vars outrank appsettings.json in ASP.NET config.
+          script: |
+            set -e
+            if [ -z "${MAPBOX_TOKEN}" ]; then
+              echo "MAPBOX_TOKEN secret is not set - the map would deploy blank. Aborting."
+              exit 1
+            fi
+            sudo mkdir -p /etc/systemd/system/todaysrecordhigh.service.d
+            sudo tee /etc/systemd/system/todaysrecordhigh.service.d/override.conf > /dev/null <<EOF
+            [Service]
+            Environment="MapboxToken=${MAPBOX_TOKEN}"
+            EOF
+            sudo chmod 600 /etc/systemd/system/todaysrecordhigh.service.d/override.conf
+            sudo systemctl daemon-reload
+            sudo systemctl restart todaysrecordhigh
