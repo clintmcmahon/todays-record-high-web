@@ -188,6 +188,102 @@ public record PeerMonthRank(
     public string RankOrdinal => MonthInReview.Ordinal(RankSameMonth);
 }
 
+public record MonthlyPrecip(int Year, int Month, double Total)
+{
+    public string Label      => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
+    public string ShortLabel => new DateTime(Year, Month, 1).ToString("MMM yyyy");
+    public string MonthName  => new DateTime(Year, Month, 1).ToString("MMMM");
+    public string Display    => Total.ToString("F2");
+}
+
+/// <summary>
+/// Least-squares fit over a year-indexed series. Slope is carried per year so a
+/// chart can draw the line, and surfaced per decade because that is the unit
+/// climate trends are quoted in.
+/// </summary>
+public record Trend(double PerYear, double Intercept, int FirstYear, int LastYear, int Count)
+{
+    public double PerDecade => PerYear * 10;
+    public double At(int year) => Intercept + PerYear * year;
+
+    /// <summary>Signed per-decade change, e.g. "+0.31" or "-1.4".</summary>
+    public string PerDecadeDisplay(string format = "F2")
+    {
+        var text = PerDecade.ToString(format);
+        var bare = text.TrimStart('-');
+        // A slope that rounds away to nothing should not print as "-0.00".
+        if (bare.All(c => c is '0' or '.' or ',')) return bare;
+        return PerDecade >= 0 ? "+" + text : text;
+    }
+
+    public bool IsFlat(double epsilon) => Math.Abs(PerDecade) < epsilon;
+}
+
+/// <summary>One bucket of the all-months precipitation histogram.</summary>
+public record PrecipBin(double Start, double End, int Count)
+{
+    public string Label => End - Start >= 1
+        ? $"{Start:0}–{End:0}\""
+        : $"{Start:0.##}–{End:0.##}\"";
+}
+
+public record MonthPrecipReview(
+    int Year,
+    int Month,
+    double Total,
+    double? NormalTotal,                // 1991–2020 mean for this calendar month
+    int RankWettestSameMonth,           // 1 = wettest such month on record
+    int RankDriestSameMonth,
+    int TotalSameMonths,
+    int RankWettestAllMonths,           // rank vs. every month on record, any month
+    int RankDriestAllMonths,
+    int TotalMonths,
+    MonthlyPrecip? WettestSameMonthEver,
+    MonthlyPrecip? DriestSameMonthEver,
+    MonthlyPrecip? WettestMonthEver,
+    List<MonthlyPrecip> TopSameMonths,      // 10 wettest of this calendar month
+    List<MonthlyPrecip> SameMonthHistory,   // every year's total for this calendar month
+    Trend? SameMonthTrend,
+    List<PrecipBin> AllMonthsDistribution,  // every month on record, bucketed by total
+    int TargetBinIndex)
+{
+    public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
+    public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
+
+    public string TotalDisplay      => Total.ToString("F2");
+    public string? NormalDisplay    => NormalTotal?.ToString("F2");
+
+    public double? Departure => NormalTotal.HasValue ? Math.Round(Total - NormalTotal.Value, 2) : null;
+
+    /// <summary>Departure with an explicit sign, e.g. "+1.24".</summary>
+    public string? DepartureDisplay => Departure is { } d
+        ? $"{(d >= 0 ? "+" : "")}{d.ToString("F2")}" : null;
+
+    public int? PercentOfNormal => NormalTotal is > 0
+        ? (int)Math.Round(Total / NormalTotal.Value * 100)
+        : null;
+
+    public bool IsWetterThanNormal => Departure >= 0;
+
+    /// <summary>Top or bottom five for this calendar month — worth a callout.</summary>
+    public bool IsNotableWet => RankWettestSameMonth <= 5;
+    public bool IsNotableDry => RankDriestSameMonth <= 5;
+
+    /// <summary>Top or bottom 25 against every month on record, wet or dry.</summary>
+    public bool IsNotableAllTime => RankWettestAllMonths <= 25 || RankDriestAllMonths <= 25;
+
+    public string RankWettestOrdinal      => MonthInReview.Ordinal(RankWettestSameMonth);
+    public string RankDriestOrdinal       => MonthInReview.Ordinal(RankDriestSameMonth);
+    public string RankWettestAllOrdinal   => MonthInReview.Ordinal(RankWettestAllMonths);
+    public string RankDriestAllOrdinal    => MonthInReview.Ordinal(RankDriestAllMonths);
+
+    /// <summary>Whichever end of the ranking this month actually sits near.</summary>
+    public bool RankFromDryEnd => RankDriestSameMonth < RankWettestSameMonth;
+
+    public string RankOrdinal    => RankFromDryEnd ? RankDriestOrdinal : RankWettestOrdinal;
+    public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
+}
+
 public record MonthInReview(
     int Year,
     int Month,
@@ -213,7 +309,9 @@ public record MonthInReview(
     string? YearPeakHighDate,
     int? PeakMilestone,                 // 100 / 95 / 90, whichever the year's peak cleared
     int? LastYearAtMilestone,
-    List<PeerMonthRank> Peers)
+    List<PeerMonthRank> Peers,
+    Trend? SameMonthTrend,              // temperature trend across this calendar month
+    MonthPrecipReview? Precip)
 {
     public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
     public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");

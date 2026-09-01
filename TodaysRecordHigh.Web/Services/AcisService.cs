@@ -868,6 +868,197 @@ public class AcisService : IAcisService
         return results;
     }
 
+    // ── Monthly precipitation totals across the period of record ──────────
+
+    /// <summary>
+    /// One summed total per calendar month for the whole record. A month with an
+    /// unmeasured day is short by that day's rain, so this is stricter than the
+    /// temperature series: any missing day disqualifies the month from ranking.
+    /// </summary>
+    public async Task<List<MonthlyPrecip>> GetMonthlyPrecipTotalsAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:monthlyprecip:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out List<MonthlyPrecip>? cached) && cached is not null)
+            return cached;
+
+        var request = new AcisStnDataRequest
+        {
+            Sid = threadexSid,
+            SDate = "por",
+            EDate = "por",
+            Elems =
+            [
+                new AcisElement
+                {
+                    Name = "pcpn",
+                    Interval = new[] { 0, 1 },
+                    Duration = "mly",
+                    Reduce = new AcisReduce { Reduce = "sum", Add = "mcnt" }
+                }
+            ]
+        };
+
+        var response = await PostStnDataAsync(request);
+        if (response?.Data is null)
+            return [];
+
+        var results = new List<MonthlyPrecip>();
+        foreach (var row in response.Data)
+        {
+            if (row.Count < 2) continue;
+
+            var key = row[0].GetString();
+            if (key is null || key.Length < 7) continue;
+            if (!int.TryParse(key[..4], out var year)) continue;
+            if (!int.TryParse(key.Substring(5, 2), out var month)) continue;
+
+            // With "add": "mcnt" the cell is ["1.71", 0]; without it, a bare value.
+            var cell = row[1];
+            JsonElement valueEl;
+            int missing = 0;
+            if (cell.ValueKind == JsonValueKind.Array && cell.GetArrayLength() >= 2)
+            {
+                var items = cell.EnumerateArray().ToList();
+                valueEl = items[0];
+                missing = ParseInt(items[1]) ?? 0;
+            }
+            else
+            {
+                valueEl = cell;
+            }
+
+            // A month that only ever saw trace amounts reports "T", not a number.
+            var total = valueEl.ValueKind == JsonValueKind.String && valueEl.GetString() == "T"
+                ? 0.0
+                : ParseDouble(valueEl);
+
+            if (total.HasValue && missing == 0)
+                results.Add(new MonthlyPrecip(year, month, Math.Round(total.Value, 2)));
+        }
+
+        _cache.Set(cacheKey, results, TimeSpan.FromHours(12));
+        return results;
+    }
+
+    /// <summary>
+    /// Least-squares fit of value against year. Returns null for series too short
+    /// to say anything — a trend drawn through fifteen points is decoration.
+    /// </summary>
+    private static Trend? ComputeTrend(IReadOnlyList<(int Year, double Value)> series, int minPoints = 30)
+    {
+        if (series.Count < minPoints) return null;
+
+        var meanX = series.Average(p => (double)p.Year);
+        var meanY = series.Average(p => p.Value);
+
+        double sxy = 0, sxx = 0;
+        foreach (var (x, y) in series)
+        {
+            var dx = x - meanX;
+            sxy += dx * (y - meanY);
+            sxx += dx * dx;
+        }
+
+        if (sxx <= 0) return null;
+
+        var slope = sxy / sxx;
+        return new Trend(
+            PerYear:   slope,
+            Intercept: meanY - slope * meanX,
+            FirstYear: series[0].Year,
+            LastYear:  series[^1].Year,
+            Count:     series.Count);
+    }
+
+
+    /// <summary>
+    /// Buckets every monthly total on record so one month can be placed against the
+    /// whole distribution. Bin width is picked to land near 20 buckets, which keeps
+    /// a 2-inch desert record and a 19-inch coastal one equally readable.
+    /// </summary>
+    private static (List<PrecipBin> Bins, int TargetIndex) BuildPrecipHistogram(
+        List<MonthlyPrecip> totals, double target)
+    {
+        if (totals.Count == 0) return ([], -1);
+
+        var max = totals.Max(m => m.Total);
+        if (max <= 0) return ([], -1);
+
+        double[] widths = [0.1, 0.25, 0.5, 1, 2, 5];
+        var width = widths.FirstOrDefault(w => max / w <= 22, 5.0);
+        var binCount = Math.Max(1, (int)Math.Ceiling(max / width));
+
+        var counts = new int[binCount];
+        foreach (var m in totals)
+        {
+            var idx = Math.Clamp((int)(m.Total / width), 0, binCount - 1);
+            counts[idx]++;
+        }
+
+        var bins = counts
+            .Select((c, i) => new PrecipBin(
+                Math.Round(i * width, 2),
+                Math.Round((i + 1) * width, 2),
+                c))
+            .ToList();
+
+        return (bins, Math.Clamp((int)(target / width), 0, binCount - 1));
+    }
+
+    /// <summary>
+    /// The target month's rainfall against its own history: the 1991–2020 average,
+    /// its rank among the same calendar month, its rank among every month on
+    /// record, and the trend across the years.
+    /// </summary>
+    private async Task<MonthPrecipReview?> BuildMonthPrecipAsync(string threadexSid, int year, int month)
+    {
+        var totals = await GetMonthlyPrecipTotalsAsync(threadexSid);
+        if (totals.Count == 0) return null;
+
+        var target = totals.FirstOrDefault(m => m.Year == year && m.Month == month);
+        if (target is null) return null;
+
+        var sameMonth = totals.Where(m => m.Month == month).ToList();
+
+        // Counted from both ends so ties never shift a month's standing.
+        var rankWettest = sameMonth.Count(m => m.Total > target.Total) + 1;
+        var rankDriest  = sameMonth.Count(m => m.Total < target.Total) + 1;
+        var rankWettestAll = totals.Count(m => m.Total > target.Total) + 1;
+        var rankDriestAll  = totals.Count(m => m.Total < target.Total) + 1;
+
+        // Same 1991–2020 window used for the temperature normal, derived from the
+        // station's own totals rather than a second API call.
+        var baseline = sameMonth.Where(m => m.Year is >= 1991 and <= 2020).ToList();
+        double? normal = baseline.Count >= 15
+            ? Math.Round(baseline.Average(m => m.Total), 2)
+            : null;
+
+        var history = sameMonth.OrderBy(m => m.Year).ToList();
+        var trend = ComputeTrend(history.Select(m => (m.Year, m.Total)).ToList());
+
+        var (bins, targetBin) = BuildPrecipHistogram(totals, target.Total);
+
+        return new MonthPrecipReview(
+            Year:                  year,
+            Month:                 month,
+            Total:                 target.Total,
+            NormalTotal:           normal,
+            RankWettestSameMonth:  rankWettest,
+            RankDriestSameMonth:   rankDriest,
+            TotalSameMonths:       sameMonth.Count,
+            RankWettestAllMonths:  rankWettestAll,
+            RankDriestAllMonths:   rankDriestAll,
+            TotalMonths:           totals.Count,
+            WettestSameMonthEver:  sameMonth.OrderByDescending(m => m.Total).FirstOrDefault(),
+            DriestSameMonthEver:   sameMonth.OrderBy(m => m.Total).FirstOrDefault(),
+            WettestMonthEver:      totals.OrderByDescending(m => m.Total).FirstOrDefault(),
+            TopSameMonths:         sameMonth.OrderByDescending(m => m.Total).Take(10).ToList(),
+            SameMonthHistory:      history,
+            SameMonthTrend:        trend,
+            AllMonthsDistribution: bins,
+            TargetBinIndex:        targetBin);
+    }
+
     // ── Month in Review ───────────────────────────────────────────────────
 
     public async Task<MonthInReview?> GetMonthInReviewAsync(
@@ -1003,6 +1194,11 @@ public class AcisService : IAcisService
         // ── Regional peers ────────────────────────────────────────────────
         var peers = await GetPeerRanksAsync(peerStations, target.Year, target.Month);
 
+        // ── Precipitation and the temperature trend for this calendar month ──
+        var precipReview = await BuildMonthPrecipAsync(threadexSid, target.Year, target.Month);
+
+        var tempTrend = ComputeTrend(sameMonthHistory.Select(m => (m.Year, m.AvgTemp)).ToList());
+
         var review = new MonthInReview(
             Year:                     target.Year,
             Month:                    target.Month,
@@ -1028,7 +1224,9 @@ public class AcisService : IAcisService
             YearPeakHighDate:         yearPeakDate,
             PeakMilestone:            milestone,
             LastYearAtMilestone:      lastYearAtMilestone,
-            Peers:                    peers);
+            Peers:                    peers,
+            SameMonthTrend:           tempTrend,
+            Precip:                   precipReview);
 
         // Only changes once a month, but keep it short enough that a station whose
         // data lands late still refreshes the same day.

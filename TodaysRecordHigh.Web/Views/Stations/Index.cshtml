@@ -27,6 +27,21 @@
     }) ?? []);
     var monthNormalJson = mr?.NormalAvgTemp is { } n ? TodaysRecordHigh.Web.Models.TempFormat.Round1(n).ToString("F1") : "null";
 
+    var mp = mr?.Precip;
+    var monthPrecipJson = JsonSerializer.Serialize(mp?.SameMonthHistory.Select(x => new {
+        year = x.Year, total = x.Total
+    }) ?? []);
+    var monthPrecipNormalJson = mp?.NormalTotal is { } pn ? pn.ToString("F2") : "null";
+    // Trend lines are drawn from the fitted slope, so the chart never re-fits in JS.
+    var monthTempTrendJson = mr?.SameMonthTrend is { } tt
+        ? JsonSerializer.Serialize(new { perYear = tt.PerYear, intercept = tt.Intercept }) : "null";
+    var monthPrecipTrendJson = mp?.SameMonthTrend is { } pt
+        ? JsonSerializer.Serialize(new { perYear = pt.PerYear, intercept = pt.Intercept }) : "null";
+    var monthPrecipDistJson = JsonSerializer.Serialize(mp?.AllMonthsDistribution.Select(b => new {
+        label = b.Label, start = b.Start, end = b.End, count = b.Count
+    }) ?? []);
+    var monthPrecipBinIndex = mp?.TargetBinIndex ?? -1;
+
     var currentYear = DateTime.Now.Year;
     var currentMonth = DateTime.Now.Month;
     var monthName = DateTime.Now.ToString("MMMM");
@@ -1001,10 +1016,138 @@
                             <p class="text-muted small mb-3">
                                 @mr.SameMonthHistory.First().Year–@mr.SameMonthHistory.Last().Year &middot;
                                 @mr.Year highlighted
+                                @if (mr.SameMonthTrend is { } ttr && !ttr.IsFlat(0.05))
+                                {
+                                    <text>
+                                        &middot; trend @ttr.PerDecadeDisplay("F2")° per decade
+                                        (@(ttr.PerDecade >= 0 ? "warming" : "cooling") since @ttr.FirstYear)
+                                    </text>
+                                }
                             </p>
                             <div class="chart-container"><canvas id="monthHistoryChart"></canvas></div>
                         </div>
                     </div>
+                </section>
+                <hr class="section-divider" />
+            }
+
+            <!-- Precipitation for the month -->
+            @if (mp is not null)
+            {
+                var wetCss = mp.IsWetterThanNormal ? "primary" : "danger";
+                <section class="mb-4">
+                    <h2 class="h6 fw-bold mb-1">Precipitation — @mp.Label</h2>
+                    <p class="text-muted small mb-3">
+                        Month total against the 1991–2020 average and every @mp.MonthName on record
+                    </p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 bg-light">
+                                <div class="card-body p-3">
+                                    <div class="stat-hero-temp text-@wetCss">@mp.TotalDisplay"</div>
+                                    <div class="small fw-semibold mt-1">Total precipitation</div>
+                                    <div class="text-muted" style="font-size:.8rem">@mp.Label</div>
+                                </div>
+                            </div>
+                        </div>
+                        @if (mp.NormalTotal.HasValue)
+                        {
+                            <div class="col-6 col-md-3">
+                                <div class="card border-0 h-100 bg-light">
+                                    <div class="card-body p-3">
+                                        <div class="fw-bold fs-5 text-@wetCss">@mp.DepartureDisplay"</div>
+                                        <div class="small fw-semibold mt-1">vs. average</div>
+                                        <div class="text-muted" style="font-size:.8rem">
+                                            Normal: @mp.NormalDisplay"
+                                            @if (mp.PercentOfNormal.HasValue)
+                                            {
+                                                <text>&middot; @mp.PercentOfNormal% of normal</text>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 @(mp.IsNotableWet || mp.IsNotableDry ? "bg-warning bg-opacity-25" : "bg-light")">
+                                <div class="card-body p-3">
+                                    <div class="fw-bold fs-5">@mp.RankOrdinal-@mp.RankSuperlative</div>
+                                    <div class="small fw-semibold mt-1">@mp.MonthName rank</div>
+                                    <div class="text-muted" style="font-size:.8rem">
+                                        of @mp.TotalSameMonths on record
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card border-0 h-100 bg-light">
+                                <div class="card-body p-3">
+                                    @if (mp.WettestSameMonthEver is not null)
+                                    {
+                                        <div class="fw-bold fs-5 text-primary">@mp.WettestSameMonthEver.Display"</div>
+                                        <div class="small fw-semibold mt-1">Wettest @mp.MonthName ever</div>
+                                        <div class="text-muted" style="font-size:.8rem">
+                                            @mp.WettestSameMonthEver.Year
+                                            @if (mp.DriestSameMonthEver is not null)
+                                            {
+                                                <text>&middot; driest @mp.DriestSameMonthEver.Display" (@mp.DriestSameMonthEver.Year)</text>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @{
+                        var allTimeRank = mp.RankWettestAllMonths <= mp.RankDriestAllMonths
+                            ? $"{mp.RankWettestAllOrdinal}-wettest"
+                            : $"{mp.RankDriestAllOrdinal}-driest";
+                    }
+                    <p class="small @(mp.IsNotableAllTime ? "fw-semibold" : "text-muted") mb-3">
+                        @if (mp.IsNotableAllTime)
+                        {
+                            <span class="badge bg-@(mp.RankWettestAllMonths <= 25 ? "primary" : "danger") me-1">Notable</span>
+                        }
+                        Against every month on record, @mp.Label ranks
+                        <strong>@allTimeRank</strong> of @(mp.TotalMonths.ToString("N0")).
+                    </p>
+
+                    @if (mp.SameMonthHistory.Count > 3)
+                    {
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h3 class="h6 fw-semibold mb-1">@mp.MonthName Precipitation by Year</h3>
+                                <p class="text-muted small mb-3">
+                                    @mp.SameMonthHistory.First().Year–@mp.SameMonthHistory.Last().Year &middot;
+                                    @mp.Year highlighted
+                                    @if (mp.SameMonthTrend is { } ptr && !ptr.IsFlat(0.005))
+                                    {
+                                        <text>
+                                            &middot; trend @ptr.PerDecadeDisplay()" per decade
+                                            (@(ptr.PerDecade >= 0 ? "wetter" : "drier") since @ptr.FirstYear)
+                                        </text>
+                                    }
+                                </p>
+                                <div class="chart-container"><canvas id="monthPrecipChart"></canvas></div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (mp.AllMonthsDistribution.Count > 3)
+                    {
+                        <div class="card border-0 bg-light mt-3">
+                            <div class="card-body">
+                                <h3 class="h6 fw-semibold mb-1">Against Every Month on Record</h3>
+                                <p class="text-muted small mb-3">
+                                    All @(mp.TotalMonths.ToString("N0")) complete months on record, grouped by total
+                                    &middot; the bar holding @mp.Label is highlighted
+                                </p>
+                                <div class="chart-container" style="height:220px;"><canvas id="monthPrecipDistChart"></canvas></div>
+                            </div>
+                        </div>
+                    }
                 </section>
                 <hr class="section-divider" />
             }
@@ -1109,7 +1252,17 @@
                 <strong>About this data.</strong> Monthly averages are the mean of daily average temperatures,
                 computed from NOAA Threadex records via RCC ACIS. Months missing more than three days of
                 observations are excluded from the rankings, so the in-progress month never appears.
-                Rankings cover @mr.TotalMonths complete months on record.
+                Rankings cover @(mr.TotalMonths.ToString("N0")) complete months on record.
+                @if (mp is not null)
+                {
+                    <text>
+                        Precipitation totals sum the daily reports for the month, with trace amounts counted
+                        as zero. A month missing any day of precipitation data is left out entirely — an
+                        unreported day is unreported rain — so the precipitation record covers
+                        @(mp.TotalMonths.ToString("N0")) months. Normals are the 1991–2020 mean for the same
+                        calendar month. Trend lines are a least-squares fit across every year shown.
+                    </text>
+                }
             </section>
 
             </div><!-- /#tab-month -->
@@ -1146,9 +1299,14 @@
 
     // ── Month in Review ──────────────────────────────────────────────────
     function initMonthChart() {
-        const monthData   = @Html.Raw(monthHistoryJson);
-        const monthNormal = @Html.Raw(monthNormalJson);
-        const targetYear  = @(mr?.Year ?? 0);
+        const monthData      = @Html.Raw(monthHistoryJson);
+        const monthNormal    = @Html.Raw(monthNormalJson);
+        const monthTempTrend = @Html.Raw(monthTempTrendJson);
+        const targetYear     = @(mr?.Year ?? 0);
+
+        initMonthPrecipChart(targetYear);
+        initMonthPrecipDistChart();
+
         const ctx = document.getElementById('monthHistoryChart');
         if (!ctx || !monthData.length) return;
 
@@ -1188,16 +1346,25 @@
             });
         }
 
+        if (monthTempTrend) {
+            datasets.push(trendDataset(monthData, monthTempTrend, 'Trend', 'rgba(220,38,38,0.9)'));
+        }
+
         new Chart(ctx, {
             data: { labels: monthData.map(d => d.year), datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: monthNormal !== null, labels: { boxWidth: 12, filter: i => i.datasetIndex === 1 } },
+                    legend: {
+                        display: datasets.length > 1,
+                        labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 }
+                    },
                     tooltip: {
                         callbacks: {
                             label: (item) => {
-                                if (item.datasetIndex === 1) return `1991–2020 average: ${monthNormal}°F`;
+                                // Reference lines identify themselves; only the bars get a departure.
+                                if (item.dataset.type === 'line')
+                                    return `${item.dataset.label}: ${item.parsed.y.toFixed(1)}°F`;
                                 const d = monthData[item.dataIndex];
                                 const lines = [`Average: ${d.avg.toFixed(1)}°F`];
                                 if (monthNormal !== null) {
@@ -1216,6 +1383,158 @@
                         ticks: { callback: v => v + '°' },
                         // Bars start well below the data so year-to-year differences stay legible
                         min: Math.floor((minT - 2) / 5) * 5
+                    }
+                }
+            }
+        });
+    }
+
+    // A fitted line the server computed — drawn across the same year axis as the bars.
+    function trendDataset(rows, trend, label, color) {
+        return {
+            type: 'line',
+            label: label,
+            data: rows.map(d => trend.intercept + trend.perYear * d.year),
+            borderColor: color,
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+            order: 0
+        };
+    }
+
+    // Every year's total for the month under review, against its own normal and trend.
+    function initMonthPrecipChart(targetYear) {
+        const precipData   = @Html.Raw(monthPrecipJson);
+        const precipNormal = @Html.Raw(monthPrecipNormalJson);
+        const precipTrend  = @Html.Raw(monthPrecipTrendJson);
+        const ctx = document.getElementById('monthPrecipChart');
+        if (!ctx || !precipData.length) return;
+
+        const totals = precipData.map(d => d.total);
+        const maxP   = Math.max(...totals);
+
+        // Wet years read blue, dry years tan, against the normal where there is one.
+        const midpoint = precipNormal !== null ? precipNormal : maxP / 2;
+        const colors = precipData.map(d => {
+            if (d.year === targetYear) return 'rgba(234,179,8,0.95)';
+            return d.total >= midpoint ? 'rgba(37,99,235,0.75)' : 'rgba(180,140,90,0.7)';
+        });
+
+        const datasets = [{
+            type: 'bar',
+            label: 'Precipitation (in)',
+            data: totals,
+            backgroundColor: colors,
+            borderWidth: 0,
+            borderRadius: 2,
+            order: 2
+        }];
+
+        if (precipNormal !== null) {
+            datasets.push({
+                type: 'line',
+                label: '1991–2020 average',
+                data: precipData.map(() => precipNormal),
+                borderColor: 'rgba(15,23,42,0.55)',
+                borderDash: [6, 4],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                order: 1
+            });
+        }
+
+        if (precipTrend) {
+            datasets.push(trendDataset(precipData, precipTrend, 'Trend', 'rgba(13,110,253,0.9)'));
+        }
+
+        new Chart(ctx, {
+            data: { labels: precipData.map(d => d.year), datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: datasets.length > 1,
+                        labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                if (item.dataset.type === 'line')
+                                    return `${item.dataset.label}: ${item.parsed.y.toFixed(2)}"`;
+                                const d = precipData[item.dataIndex];
+                                const lines = [`Total: ${d.total.toFixed(2)}"`];
+                                if (precipNormal !== null) {
+                                    const dep = d.total - precipNormal;
+                                    lines.push(`${dep >= 0 ? '+' : ''}${dep.toFixed(2)}" vs. average`);
+                                    if (precipNormal > 0)
+                                        lines.push(`${Math.round(d.total / precipNormal * 100)}% of normal`);
+                                }
+                                return lines;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        ticks: { callback: v => v + '"' }
+                    }
+                }
+            }
+        });
+    }
+
+    // This month set against the shape of the whole record, not just its own calendar month.
+    function initMonthPrecipDistChart() {
+        const bins     = @Html.Raw(monthPrecipDistJson);
+        const binIndex = @monthPrecipBinIndex;
+        const ctx = document.getElementById('monthPrecipDistChart');
+        if (!ctx || !bins.length) return;
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bins.map(b => b.start),
+                datasets: [{
+                    label: 'Months on record',
+                    data: bins.map(b => b.count),
+                    backgroundColor: bins.map((b, i) =>
+                        i === binIndex ? 'rgba(234,179,8,0.95)' : 'rgba(37,99,235,0.55)'),
+                    borderWidth: 0,
+                    borderRadius: 2,
+                    categoryPercentage: 1.0,
+                    barPercentage: 0.96
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => bins[items[0].dataIndex].label,
+                            label: (item) => {
+                                const b = bins[item.dataIndex];
+                                const lines = [`${b.count} ${b.count === 1 ? 'month' : 'months'}`];
+                                if (item.dataIndex === binIndex) lines.push('Includes the month under review');
+                                return lines;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxRotation: 0, autoSkipPadding: 12, callback: function (v) { return this.getLabelForValue(v) + '"'; } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.06)' },
+                        title: { display: true, text: 'Months' }
                     }
                 }
             }

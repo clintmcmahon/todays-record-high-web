@@ -17,5 +17,6 @@ public interface IAcisService
     Task<HeatWaveData?> GetHeatWaveDataAsync(string threadexSid);
     Task<List<OnThisDayRecord>> GetOnThisDayHistoryAsync(string threadexSid, string monthDay);
     Task<List<MonthlyMean>> GetMonthlyMeansAsync(string threadexSid);
+    Task<List<MonthlyPrecip>> GetMonthlyPrecipTotalsAsync(string threadexSid);
     Task<MonthInReview?> GetMonthInReviewAsync(string threadexSid, IReadOnlyList<Station> peerStations);
 }
