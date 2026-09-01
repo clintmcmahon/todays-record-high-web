@@ -40,6 +40,12 @@ public class StationDetailViewModel
     // ── Month in Review (most recently completed month) ──────────────────
     public MonthInReview? MonthReview { get; set; }
 
+    /// <summary>The reader picked a specific month rather than taking the default.</summary>
+    public bool MonthRequested { get; set; }
+
+    /// <summary>The picked month has no complete record, so the latest one is shown instead.</summary>
+    public bool MonthRequestUnavailable { get; set; }
+
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }
 

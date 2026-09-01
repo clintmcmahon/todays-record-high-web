@@ -360,6 +360,10 @@ public class AcisService : IAcisService
         double monA = 0, monN = 0;
         double sumA = 0, sumN = 0;   // summer
 
+        // One point per day of the current year, so the page can show the year's
+        // running total against the running normal for the same date.
+        var ytdCumulative = new List<(string Date, double CumActual, double CumNormal)>();
+
         foreach (var row in response.Data)
         {
             if (row.Count < 3) continue;
@@ -390,6 +394,9 @@ public class AcisService : IAcisService
             {
                 if (actual.HasValue) ytdA += actual.Value;
                 if (normal.HasValue) ytdN += normal.Value;
+
+                ytdCumulative.Add((date.ToString("yyyy-MM-dd"),
+                                   Math.Round(ytdA, 2), Math.Round(ytdN, 2)));
 
                 if (m == curMonth)
                 {
@@ -452,7 +459,13 @@ public class AcisService : IAcisService
             inSummer ? Math.Round(sumA, 2) : null,
             inSummer ? Math.Round(sumN, 2) : null,
             summerFullNormal.HasValue ? Math.Round(summerFullNormal.Value, 2) : null,
-            annualTotals, monthly24, heavyList, curHeavy
+            annualTotals, monthly24, heavyList, curHeavy,
+            ytdCumulative,
+            // The in-progress year would drag the fit down, so it sits out.
+            ComputeTrend(annualTotals
+                .Where(t => t.Year < curYear)
+                .Select(t => (t.Year, t.Actual))
+                .ToList())
         );
 
         _cache.Set(cacheKey, result, TimeSpan.FromHours(6));
@@ -972,43 +985,9 @@ public class AcisService : IAcisService
 
 
     /// <summary>
-    /// Buckets every monthly total on record so one month can be placed against the
-    /// whole distribution. Bin width is picked to land near 20 buckets, which keeps
-    /// a 2-inch desert record and a 19-inch coastal one equally readable.
-    /// </summary>
-    private static (List<PrecipBin> Bins, int TargetIndex) BuildPrecipHistogram(
-        List<MonthlyPrecip> totals, double target)
-    {
-        if (totals.Count == 0) return ([], -1);
-
-        var max = totals.Max(m => m.Total);
-        if (max <= 0) return ([], -1);
-
-        double[] widths = [0.1, 0.25, 0.5, 1, 2, 5];
-        var width = widths.FirstOrDefault(w => max / w <= 22, 5.0);
-        var binCount = Math.Max(1, (int)Math.Ceiling(max / width));
-
-        var counts = new int[binCount];
-        foreach (var m in totals)
-        {
-            var idx = Math.Clamp((int)(m.Total / width), 0, binCount - 1);
-            counts[idx]++;
-        }
-
-        var bins = counts
-            .Select((c, i) => new PrecipBin(
-                Math.Round(i * width, 2),
-                Math.Round((i + 1) * width, 2),
-                c))
-            .ToList();
-
-        return (bins, Math.Clamp((int)(target / width), 0, binCount - 1));
-    }
-
-    /// <summary>
-    /// The target month's rainfall against its own history: the 1991–2020 average,
-    /// its rank among the same calendar month, its rank among every month on
-    /// record, and the trend across the years.
+    /// The target month's rainfall against every other year's version of the same
+    /// calendar month: the 1991–2020 average, its rank among those months, and the
+    /// trend across the years.
     /// </summary>
     private async Task<MonthPrecipReview?> BuildMonthPrecipAsync(string threadexSid, int year, int month)
     {
@@ -1023,8 +1002,6 @@ public class AcisService : IAcisService
         // Counted from both ends so ties never shift a month's standing.
         var rankWettest = sameMonth.Count(m => m.Total > target.Total) + 1;
         var rankDriest  = sameMonth.Count(m => m.Total < target.Total) + 1;
-        var rankWettestAll = totals.Count(m => m.Total > target.Total) + 1;
-        var rankDriestAll  = totals.Count(m => m.Total < target.Total) + 1;
 
         // Same 1991–2020 window used for the temperature normal, derived from the
         // station's own totals rather than a second API call.
@@ -1036,8 +1013,6 @@ public class AcisService : IAcisService
         var history = sameMonth.OrderBy(m => m.Year).ToList();
         var trend = ComputeTrend(history.Select(m => (m.Year, m.Total)).ToList());
 
-        var (bins, targetBin) = BuildPrecipHistogram(totals, target.Total);
-
         return new MonthPrecipReview(
             Year:                  year,
             Month:                 month,
@@ -1046,40 +1021,45 @@ public class AcisService : IAcisService
             RankWettestSameMonth:  rankWettest,
             RankDriestSameMonth:   rankDriest,
             TotalSameMonths:       sameMonth.Count,
-            RankWettestAllMonths:  rankWettestAll,
-            RankDriestAllMonths:   rankDriestAll,
-            TotalMonths:           totals.Count,
             WettestSameMonthEver:  sameMonth.OrderByDescending(m => m.Total).FirstOrDefault(),
             DriestSameMonthEver:   sameMonth.OrderBy(m => m.Total).FirstOrDefault(),
-            WettestMonthEver:      totals.OrderByDescending(m => m.Total).FirstOrDefault(),
             TopSameMonths:         sameMonth.OrderByDescending(m => m.Total).Take(10).ToList(),
+            DriestSameMonths:      sameMonth.OrderBy(m => m.Total).ThenByDescending(m => m.Year).Take(10).ToList(),
             SameMonthHistory:      history,
-            SameMonthTrend:        trend,
-            AllMonthsDistribution: bins,
-            TargetBinIndex:        targetBin);
+            SameMonthTrend:        trend);
     }
 
     // ── Month in Review ───────────────────────────────────────────────────
 
     public async Task<MonthInReview?> GetMonthInReviewAsync(
-        string threadexSid, IReadOnlyList<Station> peerStations)
+        string threadexSid, IReadOnlyList<Station> peerStations,
+        int? requestedYear = null, int? requestedMonth = null)
     {
         var monthlyMeans = await GetMonthlyMeansAsync(threadexSid);
         if (monthlyMeans.Count == 0)
             return null;
 
-        // Review the most recent complete month. The in-progress month is already
-        // excluded by the missing-day filter, so this is simply the latest entry
-        // that starts before the current one.
+        // The in-progress month is already excluded by the missing-day filter, so the
+        // reviewable set is simply every entry starting before the current month.
         var now = DateTime.Now;
         var currentMonthStart = new DateTime(now.Year, now.Month, 1);
-        var target = monthlyMeans
+        var reviewable = monthlyMeans
             .Where(m => new DateTime(m.Year, m.Month, 1) < currentMonthStart)
+            .ToList();
+
+        var latest = reviewable
             .OrderByDescending(m => m.Year).ThenByDescending(m => m.Month)
             .FirstOrDefault();
 
-        if (target is null)
+        if (latest is null)
             return null;
+
+        // A reader can ask for any month in the record; anything unavailable falls
+        // back to the newest complete month, which the caller can detect by
+        // comparing what it asked for against what came back.
+        var target = requestedYear.HasValue && requestedMonth.HasValue
+            ? reviewable.FirstOrDefault(m => m.Year == requestedYear && m.Month == requestedMonth) ?? latest
+            : latest;
 
         var cacheKey = $"acis:monthreview:{threadexSid}:{target.Year}-{target.Month:00}";
         if (_cache.TryGetValue(cacheKey, out MonthInReview? cachedReview) && cachedReview is not null)
@@ -1199,6 +1179,13 @@ public class AcisService : IAcisService
 
         var tempTrend = ComputeTrend(sameMonthHistory.Select(m => (m.Year, m.AvgTemp)).ToList());
 
+        // Drives the month/year picker: only combinations the station actually has.
+        var availableYears = reviewable
+            .GroupBy(m => m.Month)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(m => m.Year).OrderByDescending(y => y).ToList());
+
         var review = new MonthInReview(
             Year:                     target.Year,
             Month:                    target.Month,
@@ -1226,7 +1213,9 @@ public class AcisService : IAcisService
             LastYearAtMilestone:      lastYearAtMilestone,
             Peers:                    peers,
             SameMonthTrend:           tempTrend,
-            Precip:                   precipReview);
+            Precip:                   precipReview,
+            IsLatest:                 target.Year == latest.Year && target.Month == latest.Month,
+            AvailableYearsByMonth:    availableYears);
 
         // Only changes once a month, but keep it short enough that a station whose
         // data lands late still refreshes the same day.

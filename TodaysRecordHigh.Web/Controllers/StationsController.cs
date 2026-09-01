@@ -33,7 +33,7 @@ public class StationsController : Controller
     }
 
     [HttpGet("/stations/{slug}")]
-    public async Task<IActionResult> Index(string slug)
+    public async Task<IActionResult> Index(string slug, int? year, int? month)
     {
         var station = _stationService.GetBySlug(slug);
         if (station is null)
@@ -53,7 +53,7 @@ public class StationsController : Controller
             return View(vm);
 
         var sid = station.ThreadexSid!;
-        var year = today.Year;
+        var currentYear = today.Year;
 
         var recordHighsTask = _acisService.GetRecordHighsForDateAsync(sid, monthDay, topN: 10);
         var recordLowsTask  = _acisService.GetRecordLowsForDateAsync(sid, monthDay, topN: 5);
@@ -62,11 +62,16 @@ public class StationsController : Controller
         var porTask         = _acisService.GetPeriodOfRecordAsync(sid);
         var extremesTask    = _acisService.GetAllTimeExtremesAsync(sid);
         var hotDaysTask     = _acisService.GetHotDaysPerYearAsync(sid);
-        var ytdTask         = _acisService.GetYearToDateDeparturesAsync(sid, year);
+        var ytdTask         = _acisService.GetYearToDateDeparturesAsync(sid, currentYear);
         var warmNightsTask  = _acisService.GetWarmSummerNightsAsync(sid);
         var precipTask      = _acisService.GetPrecipDataAsync(sid);
         var heatWaveTask    = _acisService.GetHeatWaveDataAsync(sid);
-        var monthReviewTask = _acisService.GetMonthInReviewAsync(sid, _stationService.GetNearest(station, count: 4));
+        // month=1..12 with a year picks any month in the record for the Month in Review
+        // tab; anything else reviews the most recent complete month.
+        var reviewMonth = month is >= 1 and <= 12 ? month : null;
+        var reviewYear  = reviewMonth.HasValue ? year : null;
+        var monthReviewTask = _acisService.GetMonthInReviewAsync(
+            sid, _stationService.GetNearest(station, count: 4), reviewYear, reviewMonth);
         var wxTask          = station.Latitude.HasValue && station.Longitude.HasValue
                               ? _weather.GetCurrentAsync(station.Latitude.Value, station.Longitude.Value)
                               : Task.FromResult<Services.CurrentConditions?>(null);
@@ -95,6 +100,9 @@ public class StationsController : Controller
         vm.Precip               = precipTask.Result;
         vm.HeatWaves            = heatWaveTask.Result;
         vm.MonthReview          = monthReviewTask.Result;
+        vm.MonthRequested        = reviewYear.HasValue && reviewMonth.HasValue;
+        vm.MonthRequestUnavailable = vm.MonthRequested && vm.MonthReview is not null
+            && (vm.MonthReview.Year != reviewYear || vm.MonthReview.Month != reviewMonth);
         vm.Current              = wxTask.Result;
 
         return View(vm);

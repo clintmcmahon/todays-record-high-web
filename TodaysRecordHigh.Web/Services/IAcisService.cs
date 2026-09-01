@@ -18,5 +18,6 @@ public interface IAcisService
     Task<List<OnThisDayRecord>> GetOnThisDayHistoryAsync(string threadexSid, string monthDay);
     Task<List<MonthlyMean>> GetMonthlyMeansAsync(string threadexSid);
     Task<List<MonthlyPrecip>> GetMonthlyPrecipTotalsAsync(string threadexSid);
-    Task<MonthInReview?> GetMonthInReviewAsync(string threadexSid, IReadOnlyList<Station> peerStations);
+    Task<MonthInReview?> GetMonthInReviewAsync(string threadexSid, IReadOnlyList<Station> peerStations,
+        int? requestedYear = null, int? requestedMonth = null);
 }

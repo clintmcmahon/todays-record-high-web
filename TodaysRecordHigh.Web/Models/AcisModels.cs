@@ -112,7 +112,11 @@ public record PrecipData(
     List<(int Year, double Actual, double? Normal)> AnnualTotals,
     List<(int Year, int Month, double Actual, double? Normal)> MonthlyLast24,
     List<(int Year, int Count)> HeavyRainDaysPerYear,
-    int CurrentYearHeavyDays
+    int CurrentYearHeavyDays,
+    // Running totals for the current year, Jan 1 → yesterday: where the year stands
+    // against where it normally would by the same date.
+    List<(string Date, double CumActual, double CumNormal)> YtdCumulative,
+    Trend? AnnualTrend          // least-squares fit across complete years only
 );
 
 public record WarmSummerNightsData(
@@ -206,6 +210,9 @@ public record Trend(double PerYear, double Intercept, int FirstYear, int LastYea
     public double PerDecade => PerYear * 10;
     public double At(int year) => Intercept + PerYear * year;
 
+    /// <summary>Fitted change from the first year of the series to the last.</summary>
+    public double TotalChange => PerYear * (LastYear - FirstYear);
+
     /// <summary>Signed per-decade change, e.g. "+0.31" or "-1.4".</summary>
     public string PerDecadeDisplay(string format = "F2")
     {
@@ -219,14 +226,6 @@ public record Trend(double PerYear, double Intercept, int FirstYear, int LastYea
     public bool IsFlat(double epsilon) => Math.Abs(PerDecade) < epsilon;
 }
 
-/// <summary>One bucket of the all-months precipitation histogram.</summary>
-public record PrecipBin(double Start, double End, int Count)
-{
-    public string Label => End - Start >= 1
-        ? $"{Start:0}–{End:0}\""
-        : $"{Start:0.##}–{End:0.##}\"";
-}
-
 public record MonthPrecipReview(
     int Year,
     int Month,
@@ -235,17 +234,12 @@ public record MonthPrecipReview(
     int RankWettestSameMonth,           // 1 = wettest such month on record
     int RankDriestSameMonth,
     int TotalSameMonths,
-    int RankWettestAllMonths,           // rank vs. every month on record, any month
-    int RankDriestAllMonths,
-    int TotalMonths,
     MonthlyPrecip? WettestSameMonthEver,
     MonthlyPrecip? DriestSameMonthEver,
-    MonthlyPrecip? WettestMonthEver,
     List<MonthlyPrecip> TopSameMonths,      // 10 wettest of this calendar month
+    List<MonthlyPrecip> DriestSameMonths,   // 10 driest of this calendar month
     List<MonthlyPrecip> SameMonthHistory,   // every year's total for this calendar month
-    Trend? SameMonthTrend,
-    List<PrecipBin> AllMonthsDistribution,  // every month on record, bucketed by total
-    int TargetBinIndex)
+    Trend? SameMonthTrend)
 {
     public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
     public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
@@ -269,13 +263,8 @@ public record MonthPrecipReview(
     public bool IsNotableWet => RankWettestSameMonth <= 5;
     public bool IsNotableDry => RankDriestSameMonth <= 5;
 
-    /// <summary>Top or bottom 25 against every month on record, wet or dry.</summary>
-    public bool IsNotableAllTime => RankWettestAllMonths <= 25 || RankDriestAllMonths <= 25;
-
-    public string RankWettestOrdinal      => MonthInReview.Ordinal(RankWettestSameMonth);
-    public string RankDriestOrdinal       => MonthInReview.Ordinal(RankDriestSameMonth);
-    public string RankWettestAllOrdinal   => MonthInReview.Ordinal(RankWettestAllMonths);
-    public string RankDriestAllOrdinal    => MonthInReview.Ordinal(RankDriestAllMonths);
+    public string RankWettestOrdinal => MonthInReview.Ordinal(RankWettestSameMonth);
+    public string RankDriestOrdinal  => MonthInReview.Ordinal(RankDriestSameMonth);
 
     /// <summary>Whichever end of the ranking this month actually sits near.</summary>
     public bool RankFromDryEnd => RankDriestSameMonth < RankWettestSameMonth;
@@ -311,7 +300,9 @@ public record MonthInReview(
     int? LastYearAtMilestone,
     List<PeerMonthRank> Peers,
     Trend? SameMonthTrend,              // temperature trend across this calendar month
-    MonthPrecipReview? Precip)
+    MonthPrecipReview? Precip,
+    bool IsLatest,                      // false when the reader has picked an earlier month
+    Dictionary<int, List<int>> AvailableYearsByMonth)
 {
     public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
     public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
