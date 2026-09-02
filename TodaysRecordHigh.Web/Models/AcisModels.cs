@@ -349,6 +349,160 @@ public record MonthInReview(
     }
 }
 
+// ── Fall (meteorological September–November) ───────────────────────────────
+
+/// <summary>A dated event inside one year: a first freeze, a last 90° day, a first snow.</summary>
+public record DateEvent(int Year, DateTime Date, double Value)
+{
+    public int Doy               => Date.DayOfYear;
+    public string Display        => Date.ToString("MMM d");
+    public string LongDisplay    => Date.ToString("MMMM d, yyyy");
+    public string ValueDisplay   => Value.ToString("0.##");
+}
+
+/// <summary>
+/// One seasonal marker across the whole record: where it fell this year, where it
+/// normally falls, the extremes, and whether it has been drifting.
+/// </summary>
+public record SeasonMarker(
+    string Key,
+    string Label,
+    string Note,                    // what the marker means, one line
+    DateEvent? Current,             // null when the season has not reached it yet
+    double? NormalDoy,              // 1991–2020 mean day-of-year
+    DateEvent? Earliest,
+    DateEvent? Latest,
+    Trend? DoyTrend,                // days per decade; positive means later
+    List<DateEvent> History,        // every complete year the marker occurred, ascending
+    int YearsOnRecord,
+    bool IsProvisional)             // the year is still running, so "last" is only "so far"
+{
+    // Day-of-year rendered against a non-leap reference year, so Mar 1 never slips a day.
+    public string? NormalDisplay => NormalDoy.HasValue
+        ? new DateTime(2001, 1, 1).AddDays(Math.Round(NormalDoy.Value) - 1).ToString("MMM d")
+        : null;
+
+    // A provisional "last 90° so far" has no meaningful distance from its normal date:
+    // the year can still produce a later one.
+    public int? DaysVsNormal => Current is not null && NormalDoy.HasValue && !IsProvisional
+        ? (int)Math.Round(Current.Doy - NormalDoy.Value)
+        : null;
+
+    public string? VsNormalDisplay
+    {
+        get
+        {
+            if (DaysVsNormal is not { } d) return null;
+            if (d == 0) return "on time";
+            var n = Math.Abs(d);
+            return $"{n} {(n == 1 ? "day" : "days")} {(d > 0 ? "later" : "earlier")}";
+        }
+    }
+
+    public bool IsLate  => DaysVsNormal > 0;
+    public bool HasHappened => Current is not null;
+}
+
+public record GrowingSeason(
+    DateEvent? LastSpringFreeze,
+    DateEvent? FirstFallFreeze,
+    int? Days,                              // freeze-free days between the two
+    double? NormalDays,                     // 1991–2020 mean
+    Trend? DaysTrend,
+    List<(int Year, int Days)> History,
+    (int Year, int Days)? Longest,
+    (int Year, int Days)? Shortest)
+{
+    public int? DaysVsNormal => Days.HasValue && NormalDays.HasValue
+        ? (int)Math.Round(Days.Value - NormalDays.Value)
+        : null;
+
+    public string? VsNormalDisplay
+    {
+        get
+        {
+            if (DaysVsNormal is not { } d) return null;
+            if (d == 0) return "exactly normal";
+            var n = Math.Abs(d);
+            return $"{n} {(n == 1 ? "day" : "days")} {(d > 0 ? "longer" : "shorter")} than normal";
+        }
+    }
+}
+
+public record FallSeason(int Year, double? AvgTemp, double? Precip)
+{
+    public string Label            => $"Fall {Year}";
+    public string? TempDisplay     => AvgTemp.HasValue ? TempFormat.Temp1(AvgTemp.Value) : null;
+    public string? PrecipDisplay   => Precip?.ToString("F2");
+}
+
+public record FallTempSummary(
+    double AvgTemp,
+    double? Normal,
+    int RankWarmest,
+    int RankCoolest,
+    int TotalSeasons,
+    List<FallSeason> Warmest,
+    List<FallSeason> Coldest)
+{
+    public string AvgDisplay     => TempFormat.Temp1(AvgTemp);
+    public string? NormalDisplay => Normal.HasValue ? TempFormat.Temp1(Normal.Value) : null;
+
+    public double? Departure => Normal.HasValue ? TempFormat.Round1(AvgTemp - Normal.Value) : null;
+    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F1}" : null;
+
+    public bool RankFromCoolEnd => RankCoolest < RankWarmest;
+    public string RankOrdinal     => MonthInReview.Ordinal(RankFromCoolEnd ? RankCoolest : RankWarmest);
+    public string RankSuperlative => RankFromCoolEnd ? "coolest" : "warmest";
+    public bool IsNotable => Math.Min(RankWarmest, RankCoolest) <= 5;
+}
+
+public record FallPrecipSummary(
+    double Total,
+    double? Normal,
+    int RankWettest,
+    int RankDriest,
+    int TotalSeasons,
+    List<FallSeason> Wettest,
+    List<FallSeason> Driest)
+{
+    public string TotalDisplay   => Total.ToString("F2");
+    public string? NormalDisplay => Normal?.ToString("F2");
+
+    public double? Departure => Normal.HasValue ? Math.Round(Total - Normal.Value, 2) : null;
+    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F2}" : null;
+
+    public int? PercentOfNormal => Normal is > 0 ? (int)Math.Round(Total / Normal.Value * 100) : null;
+    public bool IsWetterThanNormal => Departure >= 0;
+
+    public bool RankFromDryEnd => RankDriest < RankWettest;
+    public string RankOrdinal     => MonthInReview.Ordinal(RankFromDryEnd ? RankDriest : RankWettest);
+    public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
+    public bool IsNotable => Math.Min(RankWettest, RankDriest) <= 5;
+}
+
+public record FallReview(
+    int Year,
+    bool IsInProgress,                  // the season under review has not finished
+    FallTempSummary? Temp,              // null while the season is still running
+    FallPrecipSummary? Precip,
+    List<FallSeason> TempHistory,       // every complete fall, ascending by year
+    Trend? TempTrend,
+    double? TempNormal,                 // 1991–2020 seasonal means, independent of the
+    List<FallSeason> PrecipHistory,     // season being reviewed, so the charts always
+    Trend? PrecipTrend,                 // have a reference line
+    double? PrecipNormal,
+    List<SeasonMarker> Markers,
+    GrowingSeason? Growing,
+    bool IsLatest,
+    List<int> AvailableYears)
+{
+    public string Label => $"Fall {Year}";
+
+    /// <summary>Meteorological fall, the window every number on the tab is built from.</summary>
+    public string WindowLabel => $"September 1 – November 30, {Year}";
+}
+
 public record HeatWaveData(
     int CurrentStreak,
     string? StreakStartDate,

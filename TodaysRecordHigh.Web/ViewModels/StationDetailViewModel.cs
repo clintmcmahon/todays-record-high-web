@@ -46,6 +46,9 @@ public class StationDetailViewModel
     /// <summary>The picked month has no complete record, so the latest one is shown instead.</summary>
     public bool MonthRequestUnavailable { get; set; }
 
+    // ── Fall in Review (meteorological September–November) ────────────────
+    public FallReview? FallReview { get; set; }
+
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }
 

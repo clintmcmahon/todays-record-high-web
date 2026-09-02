@@ -1293,10 +1293,40 @@ public class AcisService : IAcisService
     }
 
     /// <summary>Daily maximum temperatures for the full period of record through yesterday.</summary>
+    /// <summary>
+    /// Daily highs for the period of record, projected from the combined daily series
+    /// so a station page pulls one multi-megabyte response instead of two.
+    /// </summary>
     private async Task<List<(DateTime Date, double? MaxT)>> GetDailyMaxtAsync(string threadexSid)
     {
         var cacheKey = $"acis:dailymaxt:{threadexSid}";
         if (_cache.TryGetValue(cacheKey, out List<(DateTime, double?)>? cached) && cached is not null)
+            return cached;
+
+        var obs = await GetDailyObsAsync(threadexSid);
+        if (obs.Count == 0)
+            return [];
+
+        var results = obs.Select(o => (o.Date, o.MaxT)).ToList();
+        _cache.Set(cacheKey, results, TimeSpan.FromHours(3));
+        return results;
+    }
+
+    // ── Fall in Review (meteorological September–November) ────────────────
+
+    // Sep 30 + Oct 31 + Nov 30. Fixed every year, leap years included, so a
+    // day-weighted mean of the three monthly means is the exact seasonal mean.
+    private const int FallDayCount = 91;
+
+    /// <summary>
+    /// Daily maximum, minimum and snowfall for the whole period of record. One
+    /// request covers every dated marker on the fall tab, so the season math never
+    /// goes back to the network per threshold.
+    /// </summary>
+    private async Task<List<DailyObs>> GetDailyObsAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:dailyobs:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out List<DailyObs>? cached) && cached is not null)
             return cached;
 
         var edate = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
@@ -1305,23 +1335,365 @@ public class AcisService : IAcisService
             Sid = threadexSid,
             SDate = "por",
             EDate = edate,
-            Elems = [new AcisElement { Name = "maxt" }]
+            Elems =
+            [
+                new AcisElement { Name = "maxt" },
+                new AcisElement { Name = "mint" },
+                new AcisElement { Name = "snow" }
+            ]
         };
 
         var response = await PostStnDataAsync(request);
         if (response?.Data is null)
             return [];
 
-        var results = new List<(DateTime, double?)>(response.Data.Count);
+        var results = new List<DailyObs>(response.Data.Count);
         foreach (var row in response.Data)
         {
-            if (row.Count < 2) continue;
+            if (row.Count < 4) continue;
             if (!DateTime.TryParse(row[0].GetString(), out var date)) continue;
-            results.Add((date, ParseDouble(row[1])));
+
+            results.Add(new DailyObs(
+                date,
+                ParseDouble(row[1]),
+                ParseDouble(row[2]),
+                // Trace snow is a real event but not a measurable one; it counts as zero.
+                row[3].GetString() == "T" ? 0.0 : ParseDouble(row[3])));
         }
 
         _cache.Set(cacheKey, results, TimeSpan.FromHours(3));
         return results;
+    }
+
+    private record DailyObs(DateTime Date, double? MaxT, double? MinT, double? Snow);
+
+    /// <summary>
+    /// A marker needs to have happened in this many years before it is worth showing.
+    /// Keeps a "first 20°F" row off a Miami page and a "first snow" row off Phoenix.
+    /// </summary>
+    private const int MinYearsForMarker = 20;
+
+    /// <summary>
+    /// Share of a search window that must carry real observations before a first or last
+    /// date computed from it can be trusted.
+    /// </summary>
+    private const double MinWindowCoverage = 0.8;
+
+    public async Task<FallReview?> GetFallReviewAsync(string threadexSid, int? requestedYear = null)
+    {
+        var monthlyMeans = await GetMonthlyMeansAsync(threadexSid);
+        if (monthlyMeans.Count == 0)
+            return null;
+
+        // Day-weighted mean of September, October and November. A year missing any of
+        // the three has no comparable seasonal value and sits out of the record.
+        var meanByYearMonth = monthlyMeans
+            .Where(m => m.Month is 9 or 10 or 11)
+            .ToDictionary(m => (m.Year, m.Month), m => m.AvgTemp);
+
+        var tempHistory = meanByYearMonth.Keys.Select(k => k.Year).Distinct().OrderBy(y => y)
+            .Where(y => meanByYearMonth.ContainsKey((y, 9))
+                     && meanByYearMonth.ContainsKey((y, 10))
+                     && meanByYearMonth.ContainsKey((y, 11)))
+            .Select(y => new FallSeason(y,
+                (meanByYearMonth[(y, 9)] * 30 + meanByYearMonth[(y, 10)] * 31 + meanByYearMonth[(y, 11)] * 30)
+                    / FallDayCount,
+                null))
+            .ToList();
+
+        if (tempHistory.Count == 0)
+            return null;
+
+        var precipTotals = await GetMonthlyPrecipTotalsAsync(threadexSid);
+        var precipByYearMonth = precipTotals
+            .Where(m => m.Month is 9 or 10 or 11)
+            .ToDictionary(m => (m.Year, m.Month), m => m.Total);
+
+        var precipHistory = precipByYearMonth.Keys.Select(k => k.Year).Distinct().OrderBy(y => y)
+            .Where(y => precipByYearMonth.ContainsKey((y, 9))
+                     && precipByYearMonth.ContainsKey((y, 10))
+                     && precipByYearMonth.ContainsKey((y, 11)))
+            .Select(y => new FallSeason(y, null, Math.Round(
+                precipByYearMonth[(y, 9)] + precipByYearMonth[(y, 10)] + precipByYearMonth[(y, 11)], 2)))
+            .ToList();
+
+        // Which fall to review. During the season itself the reader wants the one
+        // happening now, even though it cannot be ranked yet.
+        var now = DateTime.Now;
+        var latestComplete = tempHistory[^1].Year;
+        var inFallOrLater = now.Month >= 9;
+        var defaultYear = inFallOrLater && now.Year > latestComplete ? now.Year : latestComplete;
+
+        var available = tempHistory.Select(f => f.Year).ToList();
+        if (defaultYear > latestComplete) available.Add(defaultYear);
+
+        var target = requestedYear is { } ry && available.Contains(ry) ? ry : defaultYear;
+        var inProgress = target > latestComplete;
+
+        var cacheKey = $"acis:fallreview:{threadexSid}:{target}";
+        if (_cache.TryGetValue(cacheKey, out FallReview? cachedReview) && cachedReview is not null)
+            return cachedReview;
+
+        var tempTrend   = ComputeTrend(tempHistory.Select(f => (f.Year, f.AvgTemp!.Value)).ToList());
+        var precipTrend = ComputeTrend(precipHistory.Select(f => (f.Year, f.Precip!.Value)).ToList());
+
+        var tempBaseline = tempHistory.Where(f => f.Year is >= 1991 and <= 2020).ToList();
+        double? tempNormal = tempBaseline.Count >= 15 ? tempBaseline.Average(f => f.AvgTemp!.Value) : null;
+
+        var precipBaseline = precipHistory.Where(f => f.Year is >= 1991 and <= 2020).ToList();
+        double? precipNormal = precipBaseline.Count >= 15
+            ? Math.Round(precipBaseline.Average(f => f.Precip!.Value), 2) : null;
+
+        FallTempSummary? tempSummary = null;
+        var targetTemp = tempHistory.FirstOrDefault(f => f.Year == target);
+        if (targetTemp is not null)
+        {
+            var v = targetTemp.AvgTemp!.Value;
+            tempSummary = new FallTempSummary(
+                AvgTemp:      v,
+                Normal:       tempNormal,
+                RankWarmest:  tempHistory.Count(f => f.AvgTemp > v) + 1,
+                RankCoolest:  tempHistory.Count(f => f.AvgTemp < v) + 1,
+                TotalSeasons: tempHistory.Count,
+                Warmest:      tempHistory.OrderByDescending(f => f.AvgTemp).Take(10).ToList(),
+                Coldest:      tempHistory.OrderBy(f => f.AvgTemp).Take(10).ToList());
+        }
+
+        FallPrecipSummary? precipSummary = null;
+        var targetPrecip = precipHistory.FirstOrDefault(f => f.Year == target);
+        if (targetPrecip is not null)
+        {
+            var v = targetPrecip.Precip!.Value;
+            precipSummary = new FallPrecipSummary(
+                Total:        v,
+                Normal:       precipNormal,
+                RankWettest:  precipHistory.Count(f => f.Precip > v) + 1,
+                RankDriest:   precipHistory.Count(f => f.Precip < v) + 1,
+                TotalSeasons: precipHistory.Count,
+                Wettest:      precipHistory.OrderByDescending(f => f.Precip).Take(10).ToList(),
+                Driest:       precipHistory.OrderBy(f => f.Precip).ThenByDescending(f => f.Year).Take(10).ToList());
+        }
+
+        var daily = await GetDailyObsAsync(threadexSid);
+        var markers = BuildSeasonMarkers(daily, target);
+        var growing = BuildGrowingSeason(daily, target);
+
+        var review = new FallReview(
+            Year:           target,
+            IsInProgress:   inProgress,
+            Temp:           tempSummary,
+            Precip:         precipSummary,
+            TempHistory:    tempHistory,
+            TempTrend:      tempTrend,
+            TempNormal:     tempNormal,
+            PrecipHistory:  precipHistory,
+            PrecipTrend:    precipTrend,
+            PrecipNormal:   precipNormal,
+            Markers:        markers,
+            Growing:        growing,
+            IsLatest:       target == defaultYear,
+            AvailableYears: available.OrderByDescending(y => y).ToList());
+
+        // Short while the season is running, longer once it is settled history.
+        _cache.Set(cacheKey, review, inProgress ? TimeSpan.FromHours(3) : TimeSpan.FromHours(12));
+        return review;
+    }
+
+    /// <summary>
+    /// The dated markers that turn summer into winter. Each is searched inside a single
+    /// calendar year so day-of-year comparisons never wrap around New Year's.
+    /// </summary>
+    private static List<SeasonMarker> BuildSeasonMarkers(List<DailyObs> daily, int targetYear)
+    {
+        if (daily.Count == 0) return [];
+
+        var byYear = daily.GroupBy(d => d.Date.Year)
+                          .ToDictionary(g => g.Key, g => g.OrderBy(d => d.Date).ToList());
+
+        var lastObs = daily[^1].Date;
+
+        // A first freeze is only the first if the days before it were actually observed.
+        // International Falls reports nothing between June and September of 1924, which
+        // would otherwise date that year's first freeze to late November.
+        bool WellObserved(int year, Func<DailyObs, double?> pick, DateTime from, DateTime windowEnd)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return false;
+
+            // Only hold the year to the part of the window that has come and gone.
+            var through = windowEnd < lastObs ? windowEnd : lastObs;
+            if (through < from) return false;
+
+            var expected = (through - from).Days + 1;
+            var seen = days.Count(d => d.Date >= from && d.Date <= through && pick(d) is not null);
+            return seen >= expected * MinWindowCoverage;
+        }
+
+        // Last occurrence anywhere in the year: the summer heat letting go.
+        DateEvent? LastInYear(int year, Func<DailyObs, double?> pick, double threshold)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return null;
+            if (!WellObserved(year, pick, new DateTime(year, 1, 1), new DateTime(year, 12, 31)))
+                return null;
+
+            DailyObs? hit = null;
+            foreach (var d in days)
+                if (pick(d) is { } v && v >= threshold) hit = d;
+            return hit is null ? null : new DateEvent(year, hit.Date, pick(hit)!.Value);
+        }
+
+        // First occurrence on or after July 1: the cold arriving. Starting mid-year keeps
+        // January's readings out of the autumn that follows them.
+        DateEvent? FirstAfterMidyear(int year, Func<DailyObs, double?> pick, Func<double, bool> test)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return null;
+            var from = new DateTime(year, 7, 1);
+            if (!WellObserved(year, pick, from, new DateTime(year, 12, 31)))
+                return null;
+
+            foreach (var d in days)
+                if (d.Date >= from && pick(d) is { } v && test(v))
+                    return new DateEvent(year, d.Date, v);
+            return null;
+        }
+
+        // A year only counts toward normals, extremes and trends once its December is on
+        // the books. Without that gate the current year contributes a "last 90°F day" of
+        // whenever the data happens to stop, which is not a last 90°F day at all.
+        var lastObserved = daily[^1].Date;
+        bool YearIsComplete(int year) => lastObserved >= new DateTime(year, 12, 31);
+
+        var completeYears = byYear.Keys.Where(YearIsComplete).OrderBy(y => y).ToList();
+        var targetComplete = YearIsComplete(targetYear);
+
+        SeasonMarker? Build(string key, string label, string note, bool isLastOfYear,
+                            Func<int, DateEvent?> forYear)
+        {
+            var history = completeYears.Select(forYear).Where(e => e is not null).Select(e => e!).ToList();
+            if (history.Count < MinYearsForMarker) return null;
+
+            var baseline = history.Where(e => e.Year is >= 1991 and <= 2020).ToList();
+            double? normalDoy = baseline.Count >= 15 ? baseline.Average(e => (double)e.Doy) : null;
+
+            // "First" markers are settled the moment they happen, so a season in progress
+            // can report one. "Last" markers cannot be known until the year runs out.
+            var current = forYear(targetYear);
+            var provisional = isLastOfYear && !targetComplete && current is not null;
+
+            return new SeasonMarker(
+                Key:           key,
+                Label:         label,
+                Note:          note,
+                Current:       current,
+                NormalDoy:     normalDoy,
+                Earliest:      history.OrderBy(e => e.Doy).ThenBy(e => e.Year).First(),
+                Latest:        history.OrderByDescending(e => e.Doy).ThenByDescending(e => e.Year).First(),
+                DoyTrend:      ComputeTrend(history.Select(e => (e.Year, (double)e.Doy)).ToList()),
+                History:       history,
+                YearsOnRecord: history.Count,
+                IsProvisional: provisional);
+        }
+
+        var markers = new List<SeasonMarker?>
+        {
+            Build("last90", "Last 90°F day", "The final day of summer heat", true,
+                  y => LastInYear(y, d => d.MaxT, 90)),
+            Build("last80", "Last 80°F day", "The last genuinely warm afternoon", true,
+                  y => LastInYear(y, d => d.MaxT, 80)),
+            Build("first50", "First high below 50°F", "The first afternoon that stays cold", false,
+                  y => FirstAfterMidyear(y, d => d.MaxT, v => v < 50)),
+            Build("freeze32", "First 32°F freeze", "Growing season over", false,
+                  y => FirstAfterMidyear(y, d => d.MinT, v => v <= 32)),
+            Build("freeze28", "First 28°F hard freeze", "Cold enough to end tender growth", false,
+                  y => FirstAfterMidyear(y, d => d.MinT, v => v <= 28)),
+            Build("freeze20", "First 20°F night", "Winter cold arriving", false,
+                  y => FirstAfterMidyear(y, d => d.MinT, v => v <= 20)),
+            Build("snow", "First measurable snow", "0.1\" or more in a day", false,
+                  y => FirstAfterMidyear(y, d => d.Snow, v => v >= 0.1)),
+        };
+
+        return markers.Where(m => m is not null).Select(m => m!).ToList();
+    }
+
+    /// <summary>
+    /// Freeze-free days: the stretch between the last spring 32°F and the first fall
+    /// 32°F, counted exclusively, so a season bounded by freezes on May 1 and Oct 1
+    /// runs 152 days rather than 153.
+    /// </summary>
+    private static GrowingSeason? BuildGrowingSeason(List<DailyObs> daily, int targetYear)
+    {
+        if (daily.Count == 0) return null;
+
+        var byYear = daily.GroupBy(d => d.Date.Year)
+                          .ToDictionary(g => g.Key, g => g.OrderBy(d => d.Date).ToList());
+
+        var lastObs = daily[^1].Date;
+
+        bool WellObserved(int year, DateTime from, DateTime windowEnd)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return false;
+            var through = windowEnd < lastObs ? windowEnd : lastObs;
+            if (through < from) return false;
+
+            var expected = (through - from).Days + 1;
+            var seen = days.Count(d => d.Date >= from && d.Date <= through && d.MinT is not null);
+            return seen >= expected * MinWindowCoverage;
+        }
+
+        DateEvent? LastSpring(int year)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return null;
+            var through = new DateTime(year, 6, 30);
+            if (!WellObserved(year, new DateTime(year, 1, 1), through)) return null;
+
+            DailyObs? hit = null;
+            foreach (var d in days)
+                if (d.Date <= through && d.MinT is { } v && v <= 32) hit = d;
+            return hit is null ? null : new DateEvent(year, hit.Date, hit.MinT!.Value);
+        }
+
+        DateEvent? FirstFall(int year)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return null;
+            var from = new DateTime(year, 7, 1);
+            if (!WellObserved(year, from, new DateTime(year, 12, 31))) return null;
+
+            foreach (var d in days)
+                if (d.Date >= from && d.MinT is { } v && v <= 32)
+                    return new DateEvent(year, d.Date, v);
+            return null;
+        }
+
+        var history = new List<(int Year, int Days)>();
+        foreach (var year in byYear.Keys.OrderBy(y => y))
+        {
+            var spring = LastSpring(year);
+            var fall   = FirstFall(year);
+            if (spring is null || fall is null) continue;
+            history.Add((year, (fall.Date - spring.Date).Days - 1));
+        }
+
+        var targetSpring = LastSpring(targetYear);
+        var targetFall   = FirstFall(targetYear);
+
+        // A station that never freezes has no growing season to report.
+        if (history.Count < MinYearsForMarker && targetFall is null)
+            return null;
+
+        int? days = targetSpring is not null && targetFall is not null
+            ? (targetFall.Date - targetSpring.Date).Days - 1
+            : null;
+
+        var baseline = history.Where(h => h.Year is >= 1991 and <= 2020).ToList();
+
+        return new GrowingSeason(
+            LastSpringFreeze: targetSpring,
+            FirstFallFreeze:  targetFall,
+            Days:             days,
+            NormalDays:       baseline.Count >= 15 ? baseline.Average(h => (double)h.Days) : null,
+            DaysTrend:        ComputeTrend(history.Select(h => (h.Year, (double)h.Days)).ToList()),
+            History:          history,
+            Longest:          history.Count > 0 ? history.OrderByDescending(h => h.Days).First() : null,
+            Shortest:         history.Count > 0 ? history.OrderBy(h => h.Days).First() : null);
     }
 
     // ── HTTP + serialization helpers ──────────────────────────────────────
