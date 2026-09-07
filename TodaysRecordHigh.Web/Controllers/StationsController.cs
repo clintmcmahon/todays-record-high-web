@@ -73,13 +73,14 @@ public class StationsController : Controller
         var monthReviewTask = _acisService.GetMonthInReviewAsync(
             sid, _stationService.GetNearest(station, count: 4), reviewYear, reviewMonth);
         var fallReviewTask  = _acisService.GetFallReviewAsync(sid, fall);
+        var climateRecordsTask = _acisService.GetClimateRecordsAsync(sid);
         var wxTask          = station.Latitude.HasValue && station.Longitude.HasValue
                               ? _weather.GetCurrentAsync(station.Latitude.Value, station.Longitude.Value)
                               : Task.FromResult<Services.CurrentConditions?>(null);
 
         await Task.WhenAll(recordHighsTask, recordLowsTask, normalMaxTask, normalMinTask,
                            porTask, extremesTask, hotDaysTask, ytdTask, warmNightsTask, precipTask,
-                           heatWaveTask, monthReviewTask, fallReviewTask, wxTask);
+                           heatWaveTask, monthReviewTask, fallReviewTask, climateRecordsTask, wxTask);
 
         var records    = recordHighsTask.Result;
         var lowRecords = recordLowsTask.Result;
@@ -102,6 +103,7 @@ public class StationsController : Controller
         vm.HeatWaves            = heatWaveTask.Result;
         vm.MonthReview          = monthReviewTask.Result;
         vm.FallReview           = fallReviewTask.Result;
+        vm.ClimateRecords       = climateRecordsTask.Result;
         vm.MonthRequested        = reviewYear.HasValue && reviewMonth.HasValue;
         vm.MonthRequestUnavailable = vm.MonthRequested && vm.MonthReview is not null
             && (vm.MonthReview.Year != reviewYear || vm.MonthReview.Month != reviewMonth);

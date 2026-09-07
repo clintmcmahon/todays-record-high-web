@@ -1500,6 +1500,38 @@ public class AcisService : IAcisService
     }
 
     /// <summary>
+    /// Whole-record first/last-date extremes: not scoped to any one year, this is the
+    /// standing answer to "how early/late has this ever happened," which belongs with the
+    /// other all-time records rather than inside a particular month or season review.
+    /// </summary>
+    public async Task<ClimateRecords?> GetClimateRecordsAsync(string threadexSid)
+    {
+        var cacheKey = $"acis:climaterecords:{threadexSid}";
+        if (_cache.TryGetValue(cacheKey, out ClimateRecords? cached) && cached is not null)
+            return cached;
+
+        var daily = await GetDailyObsAsync(threadexSid);
+        if (daily.Count == 0)
+            return null;
+
+        // targetYear only affects each marker's "Current" value, which this page does not
+        // use, so the latest observed year is as good a choice as any.
+        var latestYear = daily[^1].Date.Year;
+        var markers = BuildSeasonMarkers(daily, latestYear);
+        var growing = BuildGrowingSeason(daily, latestYear);
+
+        var records = new ClimateRecords(
+            Markers:                   markers,
+            GrowingSeasonHistory:      growing?.History ?? [],
+            LongestGrowingSeason:      growing?.Longest,
+            ShortestGrowingSeason:     growing?.Shortest,
+            NormalGrowingSeasonDays:   growing?.NormalDays);
+
+        _cache.Set(cacheKey, records, TimeSpan.FromHours(12));
+        return records;
+    }
+
+    /// <summary>
     /// The dated markers that turn summer into winter. Each is searched inside a single
     /// calendar year so day-of-year comparisons never wrap around New Year's.
     /// </summary>
@@ -1530,31 +1562,41 @@ public class AcisService : IAcisService
 
         // Last occurrence anywhere in the year: the summer heat letting go.
         DateEvent? LastInYear(int year, Func<DailyObs, double?> pick, double threshold)
+            => LastInWindow(year, pick, v => v >= threshold,
+                            new DateTime(year, 1, 1), new DateTime(year, 12, 31));
+
+        // Last occurrence within [from, through]. Restricting the window is what separates
+        // "last freeze of spring" from "first freeze of fall": both are 32°F crossings, and
+        // searching the whole year would find only the later of the two.
+        DateEvent? LastInWindow(int year, Func<DailyObs, double?> pick, Func<double, bool> test,
+                                DateTime from, DateTime through)
         {
             if (!byYear.TryGetValue(year, out var days)) return null;
-            if (!WellObserved(year, pick, new DateTime(year, 1, 1), new DateTime(year, 12, 31)))
-                return null;
+            if (!WellObserved(year, pick, from, through)) return null;
 
             DailyObs? hit = null;
             foreach (var d in days)
-                if (pick(d) is { } v && v >= threshold) hit = d;
+                if (d.Date >= from && d.Date <= through && pick(d) is { } v && test(v)) hit = d;
             return hit is null ? null : new DateEvent(year, hit.Date, pick(hit)!.Value);
+        }
+
+        // First occurrence within [from, through].
+        DateEvent? FirstInWindow(int year, Func<DailyObs, double?> pick, Func<double, bool> test,
+                                 DateTime from, DateTime through)
+        {
+            if (!byYear.TryGetValue(year, out var days)) return null;
+            if (!WellObserved(year, pick, from, through)) return null;
+
+            foreach (var d in days)
+                if (d.Date >= from && d.Date <= through && pick(d) is { } v && test(v))
+                    return new DateEvent(year, d.Date, v);
+            return null;
         }
 
         // First occurrence on or after July 1: the cold arriving. Starting mid-year keeps
         // January's readings out of the autumn that follows them.
         DateEvent? FirstAfterMidyear(int year, Func<DailyObs, double?> pick, Func<double, bool> test)
-        {
-            if (!byYear.TryGetValue(year, out var days)) return null;
-            var from = new DateTime(year, 7, 1);
-            if (!WellObserved(year, pick, from, new DateTime(year, 12, 31)))
-                return null;
-
-            foreach (var d in days)
-                if (d.Date >= from && pick(d) is { } v && test(v))
-                    return new DateEvent(year, d.Date, v);
-            return null;
-        }
+            => FirstInWindow(year, pick, test, new DateTime(year, 7, 1), new DateTime(year, 12, 31));
 
         // A year only counts toward normals, extremes and trends once its December is on
         // the books. Without that gate the current year contributes a "last 90°F day" of
@@ -1565,8 +1607,8 @@ public class AcisService : IAcisService
         var completeYears = byYear.Keys.Where(YearIsComplete).OrderBy(y => y).ToList();
         var targetComplete = YearIsComplete(targetYear);
 
-        SeasonMarker? Build(string key, string label, string note, bool isLastOfYear,
-                            Func<int, DateEvent?> forYear)
+        SeasonMarker? Build(string key, string label, string note, string group, string unit,
+                            bool isLastOfYear, Func<int, DateEvent?> forYear)
         {
             var history = completeYears.Select(forYear).Where(e => e is not null).Select(e => e!).ToList();
             if (history.Count < MinYearsForMarker) return null;
@@ -1583,6 +1625,8 @@ public class AcisService : IAcisService
                 Key:           key,
                 Label:         label,
                 Note:          note,
+                Group:         group,
+                Unit:          unit,
                 Current:       current,
                 NormalDoy:     normalDoy,
                 Earliest:      history.OrderBy(e => e.Doy).ThenBy(e => e.Year).First(),
@@ -1593,23 +1637,45 @@ public class AcisService : IAcisService
                 IsProvisional: provisional);
         }
 
-        var markers = new List<SeasonMarker?>
+        // Fall direction: winter arriving. Searched from July 1 onward so the marker
+        // never picks up a straggler from the previous spring.
+        var fallMarkers = new List<SeasonMarker?>
         {
-            Build("last90", "Last 90°F day", "The final day of summer heat", true,
+            Build("last90", "Last 90°F day", "The final day of summer heat", "Fall", "°F", true,
                   y => LastInYear(y, d => d.MaxT, 90)),
-            Build("last80", "Last 80°F day", "The last genuinely warm afternoon", true,
+            Build("last80", "Last 80°F day", "The last genuinely warm afternoon", "Fall", "°F", true,
                   y => LastInYear(y, d => d.MaxT, 80)),
-            Build("first50", "First high below 50°F", "The first afternoon that stays cold", false,
+            Build("first50", "First high below 50°F", "The first afternoon that stays cold", "Fall", "°F", false,
                   y => FirstAfterMidyear(y, d => d.MaxT, v => v < 50)),
-            Build("freeze32", "First 32°F freeze", "Growing season over", false,
+            Build("freeze32", "First 32°F freeze", "Growing season over", "Fall", "°F", false,
                   y => FirstAfterMidyear(y, d => d.MinT, v => v <= 32)),
-            Build("freeze28", "First 28°F hard freeze", "Cold enough to end tender growth", false,
+            Build("freeze28", "First 28°F hard freeze", "Cold enough to end tender growth", "Fall", "°F", false,
                   y => FirstAfterMidyear(y, d => d.MinT, v => v <= 28)),
-            Build("freeze20", "First 20°F night", "Winter cold arriving", false,
+            Build("freeze20", "First 20°F night", "Winter cold arriving", "Fall", "°F", false,
                   y => FirstAfterMidyear(y, d => d.MinT, v => v <= 20)),
-            Build("snow", "First measurable snow", "0.1\" or more in a day", false,
+            Build("snow", "First measurable snow", "0.1\" or more in a day", "Fall", "\"", false,
                   y => FirstAfterMidyear(y, d => d.Snow, v => v >= 0.1)),
         };
+
+        // Spring direction: winter releasing. The freeze searches are capped at June 30 so
+        // they find the last frost of spring, not the first one of the following fall.
+        var springMarkers = new List<SeasonMarker?>
+        {
+            Build("lastFreeze32", "Last spring 32°F freeze", "The last frost before the growing season", "Spring", "°F", true,
+                  y => LastInWindow(y, d => d.MinT, v => v <= 32,
+                                    new DateTime(y, 1, 1), new DateTime(y, 6, 30))),
+            Build("lastFreeze28", "Last spring 28°F hard freeze", "The last cold snap that could kill tender growth", "Spring", "°F", true,
+                  y => LastInWindow(y, d => d.MinT, v => v <= 28,
+                                    new DateTime(y, 1, 1), new DateTime(y, 6, 30))),
+            Build("first80", "First 80°F day of the year", "Summer heat arriving", "Spring", "°F", false,
+                  y => FirstInWindow(y, d => d.MaxT, v => v >= 80,
+                                     new DateTime(y, 1, 1), new DateTime(y, 12, 31))),
+            Build("first90", "First 90°F day of the year", "The first genuinely hot day", "Spring", "°F", false,
+                  y => FirstInWindow(y, d => d.MaxT, v => v >= 90,
+                                     new DateTime(y, 1, 1), new DateTime(y, 12, 31))),
+        };
+
+        var markers = fallMarkers.Concat(springMarkers).ToList();
 
         return markers.Where(m => m is not null).Select(m => m!).ToList();
     }

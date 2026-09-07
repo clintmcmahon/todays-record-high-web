@@ -21,4 +21,5 @@ public interface IAcisService
     Task<MonthInReview?> GetMonthInReviewAsync(string threadexSid, IReadOnlyList<Station> peerStations,
         int? requestedYear = null, int? requestedMonth = null);
     Task<FallReview?> GetFallReviewAsync(string threadexSid, int? requestedYear = null);
+    Task<ClimateRecords?> GetClimateRecordsAsync(string threadexSid);
 }

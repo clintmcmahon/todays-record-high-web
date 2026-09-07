@@ -49,6 +49,9 @@ public class StationDetailViewModel
     // ── Fall in Review (meteorological September–November) ────────────────
     public FallReview? FallReview { get; set; }
 
+    // ── Whole-record first/last-date extremes ───────────────────────────────
+    public ClimateRecords? ClimateRecords { get; set; }
+
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }
 

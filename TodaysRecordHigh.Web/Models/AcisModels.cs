@@ -368,6 +368,8 @@ public record SeasonMarker(
     string Key,
     string Label,
     string Note,                    // what the marker means, one line
+    string Group,                   // "Spring" (winter releasing) or "Fall" (winter arriving)
+    string Unit,                    // "°F" or "\"", the unit DateEvent.Value is measured in
     DateEvent? Current,             // null when the season has not reached it yet
     double? NormalDoy,              // 1991–2020 mean day-of-year
     DateEvent? Earliest,
@@ -480,6 +482,18 @@ public record FallPrecipSummary(
     public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
     public bool IsNotable => Math.Min(RankWettest, RankDriest) <= 5;
 }
+
+/// <summary>
+/// Whole-record first/last-date extremes and their companion records. Unlike Fall in
+/// Review, this is not scoped to any particular year: it is the all-time answer to
+/// "how early has this ever happened" and "how late."
+/// </summary>
+public record ClimateRecords(
+    List<SeasonMarker> Markers,     // Group == "Spring" or "Fall", in display order
+    List<(int Year, int Days)> GrowingSeasonHistory,
+    (int Year, int Days)? LongestGrowingSeason,
+    (int Year, int Days)? ShortestGrowingSeason,
+    double? NormalGrowingSeasonDays);
 
 public record FallReview(
     int Year,
