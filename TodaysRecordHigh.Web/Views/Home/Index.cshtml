@@ -12,6 +12,48 @@
         <p class="text-muted">All-time record high temperatures for today's date at major U.S. weather stations.</p>
     </div>
 
+    <!-- Records Watch teaser -->
+    @if (Model.WatchNotable.Count > 0)
+    {
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 fw-semibold mb-0">🔥 Records Watch — right now</h2>
+                <a href="/records-today" class="small text-decoration-none">See all &rarr;</a>
+            </div>
+            <div class="row g-3">
+                @foreach (var e in Model.WatchNotable)
+                {
+                    var broken = e.Status == TodaysRecordHigh.Web.Models.RecordWatchStatus.Broken;
+                    var onTrack = e.Status == TodaysRecordHigh.Web.Models.RecordWatchStatus.OnTrack;
+                    var bg = broken ? "#fff1f1" : onTrack ? "#fffaf0" : "#f8f9fa";
+                    var textCss = broken ? "text-danger" : onTrack ? "text-warning-emphasis" : "";
+                    var badgeCss = broken ? "bg-danger" : onTrack ? "bg-warning text-dark" : "bg-secondary";
+                    // Broken shows the confirmed reading; everything else shows the forecast,
+                    // today's more informative number until the observation catches up to it.
+                    var headlineTemp = broken ? e.CurrentTemp : (e.ForecastHigh ?? e.CurrentTemp);
+                    var badgeText = broken ? $"✅ {e.ObservedMarginDisplay}"
+                                  : onTrack ? $"🎯 {e.ForecastMarginDisplay}"
+                                  : e.MarginDisplay;
+                    <div class="col-6 col-md-3">
+                        <a href="/stations/@e.Slug" class="text-decoration-none text-reset">
+                            <div class="card h-100 border-0 shadow-sm" style="background:@bg;">
+                                <div class="card-body text-center py-3">
+                                    <div class="fw-semibold small">@e.City, @e.State</div>
+                                    <div class="fw-bold @textCss" style="font-size:1.5rem">
+                                        @headlineTemp?.ToString("F0")°F
+                                        <span class="fs-6 fw-normal text-muted">@(broken ? "now" : "forecast")</span>
+                                    </div>
+                                    <div class="small text-muted">Record: @e.RecordTemp°F</div>
+                                    <span class="badge @badgeCss mt-1">@badgeText</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
     <!-- Featured Station Cards -->
     <div class="mb-5">
         <h2 class="h5 fw-semibold mb-3">Record Highs for @Model.TodayLabel</h2>
@@ -242,17 +284,28 @@
                     if (!d || d.currentTemp == null) return;
 
                     const recordTemp = parseFloat(card.dataset.recordTemp);
-                    const diff = !isNaN(recordTemp) ? recordTemp - d.currentTemp : null;
+                    // Observed and forecast are kept as two separate signals, never merged
+                    // into one "peak" — "record broken" is a claim of fact and must come only
+                    // from the actual reading. The forecast is shown too (it adds real
+                    // anticipation) but only ever as a projection, since same-day forecasts
+                    // can miss by a few degrees — exactly the margin badged here.
+                    const observedDiff = !isNaN(recordTemp) ? recordTemp - d.currentTemp : null;
+                    const forecastDiff = (!isNaN(recordTemp) && d.dailyMaxF != null) ? recordTemp - d.dailyMaxF : null;
                     const emoji = d.weatherEmoji ? `${d.weatherEmoji} ` : '';
                     let html = `<span class="fw-semibold">${emoji}${d.currentTemp.toFixed(0)}°F</span>`;
                     if (d.currentTempAsOf) {
                         const tz = d.tzAbbr ? ` ${d.tzAbbr}` : '';
                         html += `<span class="text-muted ms-1" style="font-size:.75rem">as of ${d.currentTempAsOf}${tz}</span>`;
                     }
-                    if (diff !== null && diff <= 0) {
-                        html += ` <span class="badge bg-danger ms-1" style="font-size:.7rem">🚨 Record!</span>`;
-                    } else if (diff !== null && diff <= 5) {
-                        html += ` <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">🔥 ${diff.toFixed(0)}° from record</span>`;
+                    if (d.dailyMaxF != null) {
+                        html += `<div class="text-muted" style="font-size:.75rem">Forecast high: ${d.dailyMaxF.toFixed(0)}°F</div>`;
+                    }
+                    if (observedDiff !== null && observedDiff <= 0) {
+                        html += ` <span class="badge bg-danger ms-1" style="font-size:.7rem">✅ Record broken!</span>`;
+                    } else if (forecastDiff !== null && forecastDiff <= 0) {
+                        html += ` <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">🎯 On track for a record</span>`;
+                    } else if (observedDiff !== null && observedDiff <= 5) {
+                        html += ` <span class="badge bg-secondary ms-1" style="font-size:.7rem">🔥 ${observedDiff.toFixed(0)}° from record</span>`;
                     }
                     const el = card.querySelector('.record-current');
                     el.innerHTML = html;

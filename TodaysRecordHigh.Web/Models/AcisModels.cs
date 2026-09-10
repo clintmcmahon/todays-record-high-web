@@ -159,45 +159,18 @@ public static class TempFormat
     public static string Temp1(double v) => Round1(v).ToString("F1");
 }
 
-public record MonthlyMean(int Year, int Month, double AvgTemp)
+/// <summary>Shared by every "Nth warmest/wettest of M" rank display across the site.</summary>
+public static class RankFormat
 {
-    public string Label      => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
-    public string ShortLabel => new DateTime(Year, Month, 1).ToString("MMM yyyy");
-    public string MonthName  => new DateTime(Year, Month, 1).ToString("MMMM");
-    public string Display    => TempFormat.Temp1(AvgTemp);
-}
+    public static string Pluralize(int n, string word) => n == 1 ? word : word + "s";
 
-public record HotStreak(int Days, string StartDate, string EndDate, int Year, int PeakTemp)
-{
-    public string FormattedRange
+    public static string Ordinal(int n)
     {
-        get
-        {
-            if (!DateTime.TryParse(StartDate, out var s) || !DateTime.TryParse(EndDate, out var e))
-                return $"{StartDate} – {EndDate}";
-            if (s.Date == e.Date)
-                return $"{s:MMM} {s.Day}, {e:yyyy}";
-            return s.Month == e.Month
-                ? $"{s:MMM} {s.Day}–{e.Day}, {e:yyyy}"
-                : $"{s:MMM} {s.Day} – {e:MMM} {e.Day}, {e:yyyy}";
-        }
+        var suffix = (n % 100) is >= 11 and <= 13
+            ? "th"
+            : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
+        return $"{n}{suffix}";
     }
-}
-
-public record PeerMonthRank(
-    string City, string State, string Slug,
-    double AvgTemp, int RankSameMonth, int TotalSameMonths)
-{
-    public string Display     => TempFormat.Temp1(AvgTemp);
-    public string RankOrdinal => MonthInReview.Ordinal(RankSameMonth);
-}
-
-public record MonthlyPrecip(int Year, int Month, double Total)
-{
-    public string Label      => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
-    public string ShortLabel => new DateTime(Year, Month, 1).ToString("MMM yyyy");
-    public string MonthName  => new DateTime(Year, Month, 1).ToString("MMMM");
-    public string Display    => Total.ToString("F2");
 }
 
 /// <summary>
@@ -224,129 +197,6 @@ public record Trend(double PerYear, double Intercept, int FirstYear, int LastYea
     }
 
     public bool IsFlat(double epsilon) => Math.Abs(PerDecade) < epsilon;
-}
-
-public record MonthPrecipReview(
-    int Year,
-    int Month,
-    double Total,
-    double? NormalTotal,                // 1991–2020 mean for this calendar month
-    int RankWettestSameMonth,           // 1 = wettest such month on record
-    int RankDriestSameMonth,
-    int TotalSameMonths,
-    MonthlyPrecip? WettestSameMonthEver,
-    MonthlyPrecip? DriestSameMonthEver,
-    List<MonthlyPrecip> TopSameMonths,      // 10 wettest of this calendar month
-    List<MonthlyPrecip> DriestSameMonths,   // 10 driest of this calendar month
-    List<MonthlyPrecip> SameMonthHistory,   // every year's total for this calendar month
-    Trend? SameMonthTrend)
-{
-    public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
-    public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
-
-    public string TotalDisplay      => Total.ToString("F2");
-    public string? NormalDisplay    => NormalTotal?.ToString("F2");
-
-    public double? Departure => NormalTotal.HasValue ? Math.Round(Total - NormalTotal.Value, 2) : null;
-
-    /// <summary>Departure with an explicit sign, e.g. "+1.24".</summary>
-    public string? DepartureDisplay => Departure is { } d
-        ? $"{(d >= 0 ? "+" : "")}{d.ToString("F2")}" : null;
-
-    public int? PercentOfNormal => NormalTotal is > 0
-        ? (int)Math.Round(Total / NormalTotal.Value * 100)
-        : null;
-
-    public bool IsWetterThanNormal => Departure >= 0;
-
-    /// <summary>Top or bottom five for this calendar month — worth a callout.</summary>
-    public bool IsNotableWet => RankWettestSameMonth <= 5;
-    public bool IsNotableDry => RankDriestSameMonth <= 5;
-
-    public string RankWettestOrdinal => MonthInReview.Ordinal(RankWettestSameMonth);
-    public string RankDriestOrdinal  => MonthInReview.Ordinal(RankDriestSameMonth);
-
-    /// <summary>Whichever end of the ranking this month actually sits near.</summary>
-    public bool RankFromDryEnd => RankDriestSameMonth < RankWettestSameMonth;
-
-    public string RankOrdinal    => RankFromDryEnd ? RankDriestOrdinal : RankWettestOrdinal;
-    public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
-}
-
-public record MonthInReview(
-    int Year,
-    int Month,
-    double AvgTemp,
-    double? NormalAvgTemp,              // 1991–2020 mean for this calendar month
-    int RankAllMonths,                  // rank vs. every month on record (1 = warmest)
-    int TotalMonths,
-    int RankSameMonth,                  // rank vs. the same calendar month only
-    int TotalSameMonths,
-    MonthlyMean? WarmestMonthEver,
-    MonthlyMean? WarmestSameMonthEver,
-    List<MonthlyMean> TopMonths,        // top 10, any calendar month
-    List<MonthlyMean> TopSameMonths,    // top 10, this calendar month
-    List<MonthlyMean> SameMonthHistory, // every year's value for this calendar month
-    HotStreak? LongestStreakInMonth,
-    HotStreak? LongestStreakEver,
-    int? LastYearWithLongerStreak,      // most recent prior year beating this month's streak
-    int? LastYearTiedStreak,            // most recent prior year matching it exactly
-    int HotDayThreshold,                // °F, fixed at 90 where meaningful
-    int HotDaysInMonth,
-    bool ShowStreak,                    // false for stations that rarely reach the threshold
-    int? YearPeakHigh,
-    string? YearPeakHighDate,
-    int? PeakMilestone,                 // 100 / 95 / 90, whichever the year's peak cleared
-    int? LastYearAtMilestone,
-    List<PeerMonthRank> Peers,
-    Trend? SameMonthTrend,              // temperature trend across this calendar month
-    MonthPrecipReview? Precip,
-    bool IsLatest,                      // false when the reader has picked an earlier month
-    Dictionary<int, List<int>> AvailableYearsByMonth)
-{
-    public string MonthName => new DateTime(Year, Month, 1).ToString("MMMM");
-    public string Label     => new DateTime(Year, Month, 1).ToString("MMMM yyyy");
-
-    public double? DepartureFromNormal =>
-        NormalAvgTemp.HasValue ? TempFormat.Round1(AvgTemp - NormalAvgTemp.Value) : null;
-
-    public string AvgTempDisplay    => TempFormat.Temp1(AvgTemp);
-    public string? NormalAvgDisplay => NormalAvgTemp.HasValue ? TempFormat.Temp1(NormalAvgTemp.Value) : null;
-
-    /// <summary>Departure with an explicit sign, e.g. "+4.8".</summary>
-    public string? DepartureDisplay => DepartureFromNormal is { } d
-        ? $"{(d >= 0 ? "+" : "")}{d.ToString("F1")}" : null;
-
-    /// <summary>True when this month lands in the top 10 of every month on record.</summary>
-    public bool IsNotableAllTime => RankAllMonths <= 10;
-
-    public string RankAllMonthsOrdinal  => Ordinal(RankAllMonths);
-    public string RankSameMonthOrdinal  => Ordinal(RankSameMonth);
-
-    public int? YearsSinceLongerStreak =>
-        LastYearWithLongerStreak.HasValue ? Year - LastYearWithLongerStreak.Value : null;
-
-    public int? YearsSinceTiedStreak =>
-        LastYearTiedStreak.HasValue ? Year - LastYearTiedStreak.Value : null;
-
-    public int? YearsSinceMilestone =>
-        LastYearAtMilestone.HasValue ? Year - LastYearAtMilestone.Value : null;
-
-    /// <summary>No earlier year matched or beat this month's streak.</summary>
-    public bool StreakIsMonthRecord =>
-        LongestStreakInMonth is not null
-        && !LastYearWithLongerStreak.HasValue
-        && !LastYearTiedStreak.HasValue;
-
-    public static string Pluralize(int n, string word) => n == 1 ? word : word + "s";
-
-    public static string Ordinal(int n)
-    {
-        var suffix = (n % 100) is >= 11 and <= 13
-            ? "th"
-            : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
-        return $"{n}{suffix}";
-    }
 }
 
 // ── Fall (meteorological September–November) ───────────────────────────────
@@ -431,58 +281,6 @@ public record GrowingSeason(
     }
 }
 
-public record FallSeason(int Year, double? AvgTemp, double? Precip)
-{
-    public string Label            => $"Fall {Year}";
-    public string? TempDisplay     => AvgTemp.HasValue ? TempFormat.Temp1(AvgTemp.Value) : null;
-    public string? PrecipDisplay   => Precip?.ToString("F2");
-}
-
-public record FallTempSummary(
-    double AvgTemp,
-    double? Normal,
-    int RankWarmest,
-    int RankCoolest,
-    int TotalSeasons,
-    List<FallSeason> Warmest,
-    List<FallSeason> Coldest)
-{
-    public string AvgDisplay     => TempFormat.Temp1(AvgTemp);
-    public string? NormalDisplay => Normal.HasValue ? TempFormat.Temp1(Normal.Value) : null;
-
-    public double? Departure => Normal.HasValue ? TempFormat.Round1(AvgTemp - Normal.Value) : null;
-    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F1}" : null;
-
-    public bool RankFromCoolEnd => RankCoolest < RankWarmest;
-    public string RankOrdinal     => MonthInReview.Ordinal(RankFromCoolEnd ? RankCoolest : RankWarmest);
-    public string RankSuperlative => RankFromCoolEnd ? "coolest" : "warmest";
-    public bool IsNotable => Math.Min(RankWarmest, RankCoolest) <= 5;
-}
-
-public record FallPrecipSummary(
-    double Total,
-    double? Normal,
-    int RankWettest,
-    int RankDriest,
-    int TotalSeasons,
-    List<FallSeason> Wettest,
-    List<FallSeason> Driest)
-{
-    public string TotalDisplay   => Total.ToString("F2");
-    public string? NormalDisplay => Normal?.ToString("F2");
-
-    public double? Departure => Normal.HasValue ? Math.Round(Total - Normal.Value, 2) : null;
-    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F2}" : null;
-
-    public int? PercentOfNormal => Normal is > 0 ? (int)Math.Round(Total / Normal.Value * 100) : null;
-    public bool IsWetterThanNormal => Departure >= 0;
-
-    public bool RankFromDryEnd => RankDriest < RankWettest;
-    public string RankOrdinal     => MonthInReview.Ordinal(RankFromDryEnd ? RankDriest : RankWettest);
-    public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
-    public bool IsNotable => Math.Min(RankWettest, RankDriest) <= 5;
-}
-
 /// <summary>
 /// Whole-record first/last-date extremes and their companion records. Unlike Fall in
 /// Review, this is not scoped to any particular year: it is the all-time answer to
@@ -495,26 +293,81 @@ public record ClimateRecords(
     (int Year, int Days)? ShortestGrowingSeason,
     double? NormalGrowingSeasonDays);
 
-public record FallReview(
+// ── Custom Range Review (any start/end date, evaluated across every year on record) ──
+// The generalized version of Month in Review and Fall in Review: those are this same
+// computation with the window fixed to one calendar month or to Sep 1–Nov 30. Kept as
+// its own parallel model for now rather than refactored in — see architecture notes on
+// consolidating Month/Fall into this engine as a deliberate later pass, not a rename.
+
+public record RangeSeason(int Year, double? AvgTemp, double? Precip);
+
+public record RangeTempSummary(
+    double AvgTemp,
+    double? Normal,
+    int RankWarmest,
+    int RankCoolest,
+    int TotalSeasons,
+    List<RangeSeason> Warmest,
+    List<RangeSeason> Coldest)
+{
+    public string AvgDisplay     => TempFormat.Temp1(AvgTemp);
+    public string? NormalDisplay => Normal.HasValue ? TempFormat.Temp1(Normal.Value) : null;
+
+    public double? Departure => Normal.HasValue ? TempFormat.Round1(AvgTemp - Normal.Value) : null;
+    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F1}" : null;
+
+    public bool RankFromCoolEnd => RankCoolest < RankWarmest;
+    public string RankOrdinal     => RankFormat.Ordinal(RankFromCoolEnd ? RankCoolest : RankWarmest);
+    public string RankSuperlative => RankFromCoolEnd ? "coolest" : "warmest";
+    public bool IsNotable => Math.Min(RankWarmest, RankCoolest) <= 5;
+}
+
+public record RangePrecipSummary(
+    double Total,
+    double? Normal,
+    int RankWettest,
+    int RankDriest,
+    int TotalSeasons,
+    List<RangeSeason> Wettest,
+    List<RangeSeason> Driest)
+{
+    public string TotalDisplay   => Total.ToString("F2");
+    public string? NormalDisplay => Normal?.ToString("F2");
+
+    public double? Departure => Normal.HasValue ? Math.Round(Total - Normal.Value, 2) : null;
+    public string? DepartureDisplay => Departure is { } d ? $"{(d >= 0 ? "+" : "")}{d:F2}" : null;
+
+    public int? PercentOfNormal => Normal is > 0 ? (int)Math.Round(Total / Normal.Value * 100) : null;
+    public bool IsWetterThanNormal => Departure >= 0;
+
+    public bool RankFromDryEnd => RankDriest < RankWettest;
+    public string RankOrdinal     => RankFormat.Ordinal(RankFromDryEnd ? RankDriest : RankWettest);
+    public string RankSuperlative => RankFromDryEnd ? "driest" : "wettest";
+    public bool IsNotable => Math.Min(RankWettest, RankDriest) <= 5;
+}
+
+public record CustomRangeReview(
     int Year,
-    bool IsInProgress,                  // the season under review has not finished
-    FallTempSummary? Temp,              // null while the season is still running
-    FallPrecipSummary? Precip,
-    List<FallSeason> TempHistory,       // every complete fall, ascending by year
+    string StartMonthDay,           // "MM-dd"
+    string EndMonthDay,
+    bool IsInProgress,
+    RangeTempSummary? Temp,
+    RangePrecipSummary? Precip,
+    List<RangeSeason> TempHistory,
     Trend? TempTrend,
-    double? TempNormal,                 // 1991–2020 seasonal means, independent of the
-    List<FallSeason> PrecipHistory,     // season being reviewed, so the charts always
-    Trend? PrecipTrend,                 // have a reference line
+    double? TempNormal,
+    List<RangeSeason> PrecipHistory,
+    Trend? PrecipTrend,
     double? PrecipNormal,
-    List<SeasonMarker> Markers,
-    GrowingSeason? Growing,
+    int DayCount,
     bool IsLatest,
     List<int> AvailableYears)
 {
-    public string Label => $"Fall {Year}";
+    private static string MonthDay(string md) =>
+        DateTime.ParseExact(md, "MM-dd", System.Globalization.CultureInfo.InvariantCulture).ToString("MMM d");
 
-    /// <summary>Meteorological fall, the window every number on the tab is built from.</summary>
-    public string WindowLabel => $"September 1 – November 30, {Year}";
+    public string RangeLabel => $"{MonthDay(StartMonthDay)} – {MonthDay(EndMonthDay)}";
+    public string Label      => $"{RangeLabel}, {Year}";
 }
 
 public record HeatWaveData(

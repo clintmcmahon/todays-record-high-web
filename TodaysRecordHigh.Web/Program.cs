@@ -16,6 +16,12 @@ builder.Services.AddCors(options =>
 // Station list — singleton, loaded once from JSON at startup
 builder.Services.AddSingleton<IStationService, StationService>();
 
+// Records watch — background scan of every station's standing against today's record,
+// refreshed on a timer (see RecordsWatchService for why this can't run per-request).
+builder.Services.AddSingleton<RecordsWatchService>();
+builder.Services.AddSingleton<IRecordsWatchService>(sp => sp.GetRequiredService<RecordsWatchService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<RecordsWatchService>());
+
 // RCC ACIS HTTP client — responses cached via IMemoryCache inside the service
 builder.Services.AddHttpClient<IAcisService, AcisService>(client =>
 {

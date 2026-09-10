@@ -13,6 +13,9 @@ public class HomeViewModel
 
     // Pre-serialized slug list so JS can overlay live current conditions
     public string FeaturedSlugsQueryString { get; set; } = string.Empty;
+
+    // Top of the background records-watch scan — see RecordsWatchService
+    public List<RecordWatchEntry> WatchNotable { get; set; } = [];
 }
 
 public record FeaturedStationRecord(Station Station, int? RecordTemp, string? RecordDate, double? NormalTemp)

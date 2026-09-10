@@ -37,20 +37,11 @@ public class StationDetailViewModel
     public PrecipData? Precip { get; set; }
     public HeatWaveData? HeatWaves { get; set; }
 
-    // ── Month in Review (most recently completed month) ──────────────────
-    public MonthInReview? MonthReview { get; set; }
-
-    /// <summary>The reader picked a specific month rather than taking the default.</summary>
-    public bool MonthRequested { get; set; }
-
-    /// <summary>The picked month has no complete record, so the latest one is shown instead.</summary>
-    public bool MonthRequestUnavailable { get; set; }
-
-    // ── Fall in Review (meteorological September–November) ────────────────
-    public FallReview? FallReview { get; set; }
-
     // ── Whole-record first/last-date extremes ───────────────────────────────
     public ClimateRecords? ClimateRecords { get; set; }
+
+    // ── Custom Range Review (any start/end date, reader-selected) ──────────
+    public CustomRangeReview? CustomRangeReview { get; set; }
 
     // ── Current conditions ────────────────────────────────────────────────
     public CurrentConditions? Current { get; set; }

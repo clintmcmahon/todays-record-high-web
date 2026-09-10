@@ -29,50 +29,48 @@
     var heatWaveFreqJson    = JsonSerializer.Serialize(Model.HeatWaves?.EventsPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
     var dangerousNightsJson = JsonSerializer.Serialize(Model.HeatWaves?.DangerousNightsPerYear.Select(x => new { year = x.Year, count = x.Count }) ?? []);
     var avgHighDecadeJson   = JsonSerializer.Serialize(Model.HeatWaves?.AvgHighByDecade.Select(x => new { label = x.Decade, avgHigh = x.AvgHigh }) ?? []);
-    var mr = Model.MonthReview;
-    var monthHistoryJson = JsonSerializer.Serialize(mr?.SameMonthHistory.Select(x => new {
-        year = x.Year, avg = TodaysRecordHigh.Web.Models.TempFormat.Round1(x.AvgTemp)
-    }) ?? []);
-    var monthNormalJson = mr?.NormalAvgTemp is { } n ? TodaysRecordHigh.Web.Models.TempFormat.Round1(n).ToString("F1") : "null";
-
-    var mp = mr?.Precip;
-    var monthPrecipJson = JsonSerializer.Serialize(mp?.SameMonthHistory.Select(x => new {
-        year = x.Year, total = x.Total
-    }) ?? []);
-    var monthPrecipNormalJson = mp?.NormalTotal is { } pn ? pn.ToString("F2") : "null";
-    // Trend lines are drawn from the fitted slope, so the chart never re-fits in JS.
-    var monthTempTrendJson = mr?.SameMonthTrend is { } tt
-        ? JsonSerializer.Serialize(new { perYear = tt.PerYear, intercept = tt.Intercept }) : "null";
-    var monthPrecipTrendJson = mp?.SameMonthTrend is { } pt
-        ? JsonSerializer.Serialize(new { perYear = pt.PerYear, intercept = pt.Intercept }) : "null";
-    var availableYearsJson = JsonSerializer.Serialize(mr?.AvailableYearsByMonth ?? new Dictionary<int, List<int>>());
-
-    var fr = Model.FallReview;
-    var fallTempJson = JsonSerializer.Serialize(fr?.TempHistory.Select(x => new {
-        year = x.Year, avg = TodaysRecordHigh.Web.Models.TempFormat.Round1(x.AvgTemp!.Value)
-    }) ?? []);
-    var fallPrecipJson = JsonSerializer.Serialize(fr?.PrecipHistory.Select(x => new {
-        year = x.Year, total = x.Precip!.Value
-    }) ?? []);
-    var fallTempNormalJson = fr?.TempNormal is { } ftn
-        ? TodaysRecordHigh.Web.Models.TempFormat.Round1(ftn).ToString("F1") : "null";
-    var fallPrecipNormalJson = fr?.PrecipNormal is { } fpn ? fpn.ToString("F2") : "null";
     string TrendJson(TodaysRecordHigh.Web.Models.Trend? t) => t is { } v
         ? JsonSerializer.Serialize(new { perYear = v.PerYear, intercept = v.Intercept, perDecade = v.PerDecade })
         : "null";
-    var fallTempTrendJson   = TrendJson(fr?.TempTrend);
-    var fallPrecipTrendJson = TrendJson(fr?.PrecipTrend);
-    var freezeMarker = fr?.Markers.FirstOrDefault(m => m.Key == "freeze32");
-    var fallFreezeJson = JsonSerializer.Serialize(freezeMarker?.History.Select(x => new {
-        year = x.Year, doy = x.Doy, date = x.Date.ToString("MMM d")
+
+    // First & Last Dates (Records tab): one curated set of markers, in the order they
+    // occur through the year, shared between the summary range chart and the per-marker
+    // year-by-year chart that expands under whichever row the reader clicks.
+    var climateMarkerOrder = new[] { "lastFreeze32", "first90", "last90", "freeze32", "snow" };
+    var climateMarkerIcons = new Dictionary<string, string>
+    {
+        ["lastFreeze32"] = "🌱", ["first90"] = "☀️", ["last90"] = "🔥",
+        ["freeze32"] = "🥶", ["snow"] = "❄️"
+    };
+    var climateMarkers = climateMarkerOrder
+        .Select(k => Model.ClimateRecords?.Markers.FirstOrDefault(m => m.Key == k))
+        .Where(m => m is { Earliest: not null, Latest: not null })
+        .Select(m => m!)
+        .ToList();
+    var climateMarkerHistoryJson = JsonSerializer.Serialize(climateMarkers.ToDictionary(
+        m => m.Key,
+        m => new
+        {
+            label = m.Label,
+            unit = m.Unit,
+            normalDoy = m.NormalDoy,
+            trend = m.DoyTrend is { } dt ? new { perYear = dt.PerYear, intercept = dt.Intercept, perDecade = dt.PerDecade } : null,
+            history = m.History.Select(h => new { year = h.Year, doy = h.Doy, date = h.Display, value = h.Value }).ToList()
+        }));
+
+    var cr2 = Model.CustomRangeReview;
+    var rangeTempJson = JsonSerializer.Serialize(cr2?.TempHistory.Select(t => new {
+        year = t.Year, avg = TodaysRecordHigh.Web.Models.TempFormat.Round1(t.AvgTemp!.Value)
     }) ?? []);
-    var fallFreezeTrendJson = TrendJson(freezeMarker?.DoyTrend);
-    var fallFreezeNormalJson = freezeMarker?.NormalDoy is { } fnd ? fnd.ToString("F1") : "null";
-    var growingJson = JsonSerializer.Serialize(fr?.Growing?.History.Select(x => new {
-        year = x.Year, days = x.Days
+    var rangePrecipJson = JsonSerializer.Serialize(cr2?.PrecipHistory.Select(t => new {
+        year = t.Year, total = t.Precip!.Value
     }) ?? []);
-    var growingTrendJson = TrendJson(fr?.Growing?.DaysTrend);
-    var fallYear = fr?.Year ?? 0;
+    var rangeTempNormalJson = cr2?.TempNormal is { } rtn
+        ? TodaysRecordHigh.Web.Models.TempFormat.Round1(rtn).ToString("F1") : "null";
+    var rangePrecipNormalJson = cr2?.PrecipNormal is { } rpn ? rpn.ToString("F2") : "null";
+    var rangeTempTrendJson   = TrendJson(cr2?.TempTrend);
+    var rangePrecipTrendJson = TrendJson(cr2?.PrecipTrend);
+    var rangeYearValue = cr2?.Year ?? 0;
 
     var currentYear = DateTime.Now.Year;
     var currentMonth = DateTime.Now.Month;
@@ -148,11 +146,24 @@
     .climate-legend { display: flex; gap: 1.25rem; font-size: 0.72rem; color: #94a3b8; margin: 0.75rem 0 0.5rem; }
     .climate-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #1e293b; margin-right: 0.35rem; vertical-align: middle; }
     .climate-legend .bar { display: inline-block; width: 18px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, rgba(59,130,246,0.5), rgba(239,68,68,0.5)); margin-right: 0.35rem; vertical-align: middle; }
+
+    /* Click a row to expand its year-by-year history below it */
+    .climate-row-clickable { cursor: pointer; border-radius: 6px; }
+    .climate-row-clickable:hover { background: rgba(0,0,0,0.02); }
+    .climate-row-clickable:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+    .climate-chevron { flex-shrink: 0; color: #94a3b8; font-size: 0.9rem; transition: transform 0.15s; width: 1rem; text-align: center; }
+    .climate-row-clickable[aria-expanded="true"] .climate-chevron { transform: rotate(180deg); color: #2563eb; }
+    .climate-expand { padding: 0.75rem 1.25rem 1.25rem 168px; border-bottom: 1px solid rgba(0,0,0,0.05); background: #fafbfc; }
+    .climate-expand:last-child { border-bottom: none; }
+    .climate-expand[hidden] { display: none; }
+    .climate-expand-caption { font-size: 0.76rem; color: #64748b; margin-top: 0.4rem; }
+
     @@media (max-width: 576px) {
         .climate-months { display: none; }
         .climate-row { flex-direction: column; align-items: stretch; gap: 0.4rem; }
         .climate-row-label { width: auto; }
         .climate-track { height: 26px; }
+        .climate-expand { padding-left: 1rem; }
     }
 </style>
 
@@ -265,18 +276,18 @@
                             type="button" role="tab">Precipitation</button>
                 </li>
             }
-            @if (mr is not null)
+            @if (Model.YtdDepartures.Count > 10 || (Model.Precip?.YtdCumulative.Count > 5))
             {
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-month"
-                            type="button" role="tab">Month in Review</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-thisyear"
+                            type="button" role="tab">This Year</button>
                 </li>
             }
-            @if (fr is not null)
+            @if (cr2 is not null)
             {
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-fall"
-                            type="button" role="tab">Fall</button>
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-range"
+                            type="button" role="tab">📅 Period Review</button>
                 </li>
             }
         </ul>
@@ -414,17 +425,8 @@
         <!-- First & Last Dates -->
         @if (Model.ClimateRecords is { Markers.Count: > 0 } cr)
         {
-            var chartOrder = new[] { "lastFreeze32", "first90", "last90", "freeze32", "snow" };
-            var chartIcons = new Dictionary<string, string>
-            {
-                ["lastFreeze32"] = "🌱", ["first90"] = "☀️", ["last90"] = "🔥",
-                ["freeze32"] = "🥶", ["snow"] = "❄️"
-            };
-            var chartRows = chartOrder
-                .Select(k => cr.Markers.FirstOrDefault(m => m.Key == k))
-                .Where(m => m is { Earliest: not null, Latest: not null })
-                .Select(m => m!)
-                .ToList();
+            var chartIcons = climateMarkerIcons;
+            var chartRows = climateMarkers;
 
             if (chartRows.Count > 0)
             {
@@ -447,7 +449,8 @@
                             var earliestPct = m.Earliest!.Doy / 366.0 * 100;
                             var latestPct   = m.Latest!.Doy / 366.0 * 100;
                             var normalPct   = m.NormalDoy.HasValue ? m.NormalDoy.Value / 366.0 * 100 : (double?)null;
-                            <div class="climate-row">
+                            <div class="climate-row climate-row-clickable" data-marker-key="@m.Key"
+                                 role="button" tabindex="0" aria-expanded="false">
                                 <div class="climate-row-label">
                                     <div class="name">@chartIcons[m.Key] @m.Label</div>
                                     <div class="note">@m.Note</div>
@@ -468,9 +471,17 @@
                                     </div>
                                     <div class="climate-caption">
                                         Earliest <strong>@m.Earliest.Display, @m.Earliest.Year</strong>
+                                        @if (m.NormalDisplay is not null)
+                                        {
+                                            <text>&middot; Normal <strong>@m.NormalDisplay</strong></text>
+                                        }
                                         &middot; Latest <strong>@m.Latest.Display, @m.Latest.Year</strong>
                                     </div>
                                 </div>
+                                <div class="climate-chevron" aria-hidden="true">▾</div>
+                            </div>
+                            <div class="climate-expand" data-marker-key="@m.Key" hidden>
+                                <div class="chart-container" style="height:240px;"><canvas></canvas></div>
                             </div>
                         }
                         <div class="climate-legend">
@@ -707,37 +718,6 @@
             <hr class="section-divider" />
         }
 
-        <!-- YTD Departure from Normal Chart -->
-        @if (Model.YtdDepartures.Count > 10)
-        {
-            <section class="mb-4">
-                <div class="d-flex align-items-baseline gap-3 mb-3">
-                    <h2 class="h5 fw-bold mb-0">@currentYear Daily High Temperature vs Normal</h2>
-                    <span class="small text-muted">Year to date</span>
-                </div>
-                <div class="card border-0 bg-light">
-                    <div class="card-body py-3 px-3">
-                        <div class="chart-container" style="height:240px;">
-                            <canvas id="departureChart"></canvas>
-                        </div>
-                        <div class="d-flex gap-4 mt-2 justify-content-center small text-muted">
-                            <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;"></span> Above normal</span>
-                            <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px;"></span> Below normal</span>
-                        </div>
-                    </div>
-                </div>
-                @if (Model.NormalMaxTemp.HasValue)
-                {
-                    var aboveCount = Model.YtdDepartures.Count(d => d.Departure > 0);
-                    var totalWithData = Model.YtdDepartures.Count(d => d.Departure.HasValue);
-                    <p class="small text-muted mt-2 mb-0">
-                        @aboveCount of @totalWithData days with data were above the 1991–2020 normal high for their date.
-                    </p>
-                }
-            </section>
-            <hr class="section-divider" />
-        }
-
         <!-- 90°F Days Per Year Chart -->
         @if (Model.HotDaysPerYear.Count > 5)
         {
@@ -937,6 +917,98 @@
         @if (Model.Precip is not null)
         {
             var p = Model.Precip;
+
+            <section class="mb-4 pt-3">
+                <div class="row mb-3 align-items-end">
+                    <div class="col">
+                        <h2 class="h5 fw-bold mb-0">Precipitation</h2>
+                        <p class="text-muted small mb-0">
+                            Annual totals and trend across the full period of record &middot;
+                            <a href="#" data-bs-toggle="tab" data-bs-target="#tab-thisyear">see this year's standing &rarr;</a>
+                        </p>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">Monthly Precipitation — Last 24 Months</h3>
+                        <p class="text-muted small mb-3">Blue = actual · dashed line = monthly normal</p>
+                        <div class="chart-container" style="height:220px;"><canvas id="precipMonthlyChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">
+                            Annual Precipitation Per Year@(precipFirstYear.HasValue ? $" ({precipFirstYear}–{currentYear})" : "")
+                        </h3>
+                        <p class="text-muted small mb-3">
+                            Blue = above average · tan = below average · gold = @currentYear (partial)
+                            @if (precipAnnualTrend is { } atr && !atr.IsFlat(0.01))
+                            {
+                                <text>
+                                    <br />
+                                    Since @atr.FirstYear, annual totals have trended
+                                    <strong>@atr.PerDecadeDisplay()" per decade</strong>,
+                                    about @((atr.TotalChange >= 0 ? "+" : "") + atr.TotalChange.ToString("F1"))"
+                                    across the record.
+                                </text>
+                            }
+                        </p>
+                        <div class="chart-container"><canvas id="precipAnnualChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card border-0 bg-light mb-2">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">Heavy Rain Days Per Year (≥ 1.0")</h3>
+                        <p class="text-muted small mb-3">Compare year-to-year changes in days with heavy rainfall (≥ 1.0")</p>
+                        <div class="chart-container" style="height:220px;"><canvas id="precipHeavyChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        }
+        </div><!-- /#tab-precipitation -->
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             THIS YEAR TAB (temperature + precipitation, year to date)
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div class="tab-pane fade" id="tab-thisyear" role="tabpanel">
+        <div class="pt-3">
+
+        <div class="mb-4">
+            <h2 class="h5 fw-bold mb-1">This Year — @currentYear</h2>
+            <p class="text-muted small mb-0">How @Model.Station.City is tracking against normal, year to date</p>
+        </div>
+
+        @if (Model.YtdDepartures.Count > 10)
+        {
+            <section class="mb-4">
+                <div class="d-flex align-items-baseline gap-3 mb-3">
+                    <h3 class="h6 fw-semibold mb-0">Daily High Temperature vs Normal</h3>
+                </div>
+                <div class="card border-0 bg-light">
+                    <div class="card-body py-3 px-3">
+                        <div class="chart-container" style="height:240px;">
+                            <canvas id="departureChart"></canvas>
+                        </div>
+                        <div class="d-flex gap-4 mt-2 justify-content-center small text-muted">
+                            <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px;"></span> Above normal</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px;"></span> Below normal</span>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.NormalMaxTemp.HasValue)
+                {
+                    var aboveCount = Model.YtdDepartures.Count(d => d.Departure > 0);
+                    var totalWithData = Model.YtdDepartures.Count(d => d.Departure.HasValue);
+                    <p class="small text-muted mt-2 mb-0">
+                        @aboveCount of @totalWithData days with data were above the 1991–2020 normal high for their date.
+                    </p>
+                }
+            </section>
+        }
+
+        @if (Model.Precip is not null)
+        {
+            var p = Model.Precip;
             var ytdDiff  = p.YtdActual - p.YtdNormal;
             var monDiff  = p.MonthFullNormal > 0 ? p.MonthActual - p.MonthFullNormal : (double?)null;
             var sumDiff  = p.SummerActual.HasValue && p.SummerFullNormal.HasValue
@@ -944,13 +1016,9 @@
             static string DiffLabel(double d) => (d >= 0 ? "+" : "") + d.ToString("F2") + "\"";
             static string DiffCss(double d) => d >= 0.25 ? "primary" : d <= -0.25 ? "danger" : "secondary";
 
-            <section class="mb-4 pt-3">
-                <div class="row mb-3 align-items-end">
-                    <div class="col">
-                        <h2 class="h5 fw-bold mb-0">Precipitation</h2>
-                        <p class="text-muted small mb-0">Actual vs. 1991–2020 full-month and full-season normals</p>
-                    </div>
-                </div>
+            <hr class="section-divider" />
+            <section class="mb-4">
+                <h3 class="h6 fw-semibold mb-3">Precipitation, Year to Date</h3>
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-md-3">
                         <div class="card border-0 h-100 bg-light">
@@ -1009,7 +1077,7 @@
                     var standing = p.YtdActual - p.YtdNormal;
                     <div class="card border-0 bg-light mb-4">
                         <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-1">@currentYear Accumulation vs. Normal</h3>
+                            <h4 class="h6 fw-semibold mb-1">Accumulation vs. Normal</h4>
                             <p class="text-muted small mb-3">
                                 Running total since Jan 1 against the normal pace for the same date &middot;
                                 @if (Math.Abs(standing) < 0.05)
@@ -1031,639 +1099,170 @@
                         </div>
                     </div>
                 }
-                <div class="card border-0 bg-light mb-4">
-                    <div class="card-body">
-                        <h3 class="h6 fw-semibold mb-1">Monthly Precipitation — Last 24 Months</h3>
-                        <p class="text-muted small mb-3">Blue = actual · dashed line = monthly normal</p>
-                        <div class="chart-container" style="height:220px;"><canvas id="precipMonthlyChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="card border-0 bg-light mb-4">
-                    <div class="card-body">
-                        <h3 class="h6 fw-semibold mb-1">
-                            Annual Precipitation Per Year@(precipFirstYear.HasValue ? $" ({precipFirstYear}–{currentYear})" : "")
-                        </h3>
-                        <p class="text-muted small mb-3">
-                            Blue = above average · tan = below average · gold = @currentYear (partial)
-                            @if (precipAnnualTrend is { } atr && !atr.IsFlat(0.01))
-                            {
-                                <text>
-                                    <br />
-                                    Since @atr.FirstYear, annual totals have trended
-                                    <strong>@atr.PerDecadeDisplay()" per decade</strong>,
-                                    about @((atr.TotalChange >= 0 ? "+" : "") + atr.TotalChange.ToString("F1"))"
-                                    across the record.
-                                </text>
-                            }
-                        </p>
-                        <div class="chart-container"><canvas id="precipAnnualChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="card border-0 bg-light mb-2">
-                    <div class="card-body">
-                        <h3 class="h6 fw-semibold mb-1">Heavy Rain Days Per Year (≥ 1.0")</h3>
-                        <p class="text-muted small mb-3">Compare year-to-year changes in days with heavy rainfall (≥ 1.0")</p>
-                        <div class="chart-container" style="height:220px;"><canvas id="precipHeavyChart"></canvas></div>
-                    </div>
-                </div>
             </section>
         }
-        </div><!-- /#tab-precipitation -->
+
+        </div>
+        </div><!-- /#tab-thisyear -->
 
         <!-- ══════════════════════════════════════════════════════════════════
-             MONTH IN REVIEW TAB
+             CUSTOM RANGE TAB (any start/end date, across every year on record)
         ═══════════════════════════════════════════════════════════════════ -->
-        @if (mr is not null)
+        @if (cr2 is not null)
         {
-            <div class="tab-pane fade" id="tab-month" role="tabpanel">
+            <div class="tab-pane fade" id="tab-range" role="tabpanel">
 
-            <!-- Headline -->
+            <!-- Headline + picker -->
             <section class="mb-4 pt-3">
-                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
-                    <p class="text-uppercase fw-semibold text-muted small mb-0">
-                        Month in Review — <strong class="text-dark">@mr.Label</strong>
-                    </p>
-                    <form method="get" action="/stations/@Model.Station.Slug"
-                          class="d-flex align-items-end gap-2" id="monthPickerForm">
-                        <div>
-                            <label for="pickMonth" class="form-label small text-muted mb-1">Month</label>
-                            <select class="form-select form-select-sm" id="pickMonth" name="month">
-                                @for (var i = 1; i <= 12; i++)
-                                {
-                                    if (!mr.AvailableYearsByMonth.ContainsKey(i)) { continue; }
-                                    <option value="@i" selected="@(i == mr.Month)">
-                                        @(new DateTime(2000, i, 1).ToString("MMMM"))
-                                    </option>
-                                }
-                            </select>
-                        </div>
-                        <div>
-                            <label for="pickYear" class="form-label small text-muted mb-1">Year</label>
-                            <select class="form-select form-select-sm" id="pickYear" name="year">
-                                @foreach (var y in mr.AvailableYearsByMonth.GetValueOrDefault(mr.Month) ?? [])
-                                {
-                                    <option value="@y" selected="@(y == mr.Year)">@y</option>
-                                }
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-primary">View</button>
-                        @if (!mr.IsLatest)
-                        {
-                            <a href="/stations/@Model.Station.Slug" class="btn btn-sm btn-outline-secondary">Latest</a>
-                        }
-                    </form>
-                </div>
-
-                @if (Model.MonthRequestUnavailable)
-                {
-                    <div class="alert alert-warning py-2 small">
-                        That month has no complete record at this station. Showing @mr.Label instead.
-                    </div>
-                }
-                <div class="card border-0 @(mr.IsNotableAllTime ? "bg-danger bg-opacity-10" : "bg-light")">
-                    <div class="card-body text-center py-4">
-                        <div class="stat-hero-temp @(mr.IsNotableAllTime ? "text-danger" : "")">@mr.AvgTempDisplay°F</div>
-                        <p class="text-muted mt-2 mb-2 small">Average temperature &middot; @mr.Label</p>
-                        <p class="h5 fw-bold mb-2 @(mr.IsNotableAllTime ? "text-danger" : "")">
-                            @mr.RankAllMonthsOrdinal-warmest month on record
-                        </p>
-                        <p class="small text-muted mb-2">
-                            @mr.RankSameMonthOrdinal-warmest @mr.MonthName of @mr.TotalSameMonths on record
-                        </p>
-                        @if (mr.DepartureFromNormal.HasValue)
-                        {
-                            var dep = mr.DepartureFromNormal.Value;
-                            <span class="badge @(dep >= 0 ? "bg-danger" : "bg-primary") bg-opacity-10 @(dep >= 0 ? "text-danger" : "text-primary") normal-badge">
-                                @mr.DepartureDisplay° vs. @mr.NormalAvgDisplay° average (1991–2020)
-                            </span>
-                        }
-                    </div>
-                </div>
-            </section>
-
-            <!-- Key stats -->
-            <section class="mb-4">
-                <div class="row g-3">
-                    @if (mr.WarmestMonthEver is not null)
-                    {
-                        <div class="col-6 col-md-3">
-                            <div class="text-center p-3 rounded" style="background:#fff5f5;border:1px solid #fecaca;">
-                                <div class="fw-bold fs-5 text-danger">@mr.WarmestMonthEver.Display°F</div>
-                                <div class="small text-muted mt-1">Warmest month ever</div>
-                                <div class="small text-muted">@mr.WarmestMonthEver.Label</div>
-                            </div>
-                        </div>
-                    }
-                    @if (mr.WarmestSameMonthEver is not null)
-                    {
-                        <div class="col-6 col-md-3">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fw-bold fs-5">@mr.WarmestSameMonthEver.Display°F</div>
-                                <div class="small text-muted mt-1">Warmest @mr.MonthName ever</div>
-                                <div class="small text-muted">@mr.WarmestSameMonthEver.Year</div>
-                            </div>
-                        </div>
-                    }
-                    @if (mr.ShowStreak)
-                    {
-                        <div class="col-6 col-md-3">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="fw-bold fs-5">@mr.HotDaysInMonth</div>
-                                <div class="small text-muted mt-1">Days ≥ @mr.HotDayThreshold°F</div>
-                                <div class="small text-muted">in @mr.MonthName</div>
-                            </div>
-                        </div>
-                    }
-                    @if (mr.YearPeakHigh.HasValue)
-                    {
-                        <div class="col-6 col-md-3">
-                            <div class="text-center p-3 rounded" style="background:#fefce8;border:1px solid #fde047;">
-                                <div class="fw-bold fs-5" style="color:#854d0e;">@mr.YearPeakHigh°F</div>
-                                <div class="small text-muted mt-1">Hottest of @mr.Year</div>
-                                @if (mr.YearPeakHighDate is not null && DateTime.TryParse(mr.YearPeakHighDate, out var pk))
-                                {
-                                    <div class="small text-muted">@pk.ToString("MMM d")</div>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            </section>
-
-            <!-- Streak + milestone callouts -->
-            @if (mr.ShowStreak && mr.LongestStreakInMonth is not null)
-            {
-                var streak = mr.LongestStreakInMonth;
-                <section class="mb-4">
-                    <div class="card border-0 bg-light">
-                        <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-2">Longest @mr.HotDayThreshold°F Streak in @mr.MonthName</h3>
-                            <p class="mb-2">
-                                <strong class="fs-5">@streak.Days consecutive @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(streak.Days, "day")</strong>
-                                with highs of at least @mr.HotDayThreshold°F
-                                <span class="text-muted">(@streak.FormattedRange, peaking at @streak.PeakTemp°F)</span>
-                            </p>
-                            @if (mr.StreakIsMonthRecord)
-                            {
-                                <p class="small text-danger fw-semibold mb-0">
-                                    The longest @mr.MonthName streak in @Model.Station.City&rsquo;s recorded history.
-                                </p>
-                            }
-                            else if (mr.LastYearTiedStreak.HasValue
-                                     && (!mr.LastYearWithLongerStreak.HasValue
-                                         || mr.LastYearTiedStreak > mr.LastYearWithLongerStreak))
-                            {
-                                <p class="small text-muted mb-0">
-                                    Ties the longest @mr.MonthName streak since <strong>@mr.LastYearTiedStreak</strong>
-                                    (@mr.YearsSinceTiedStreak @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceTiedStreak!.Value, "year")).
-                                    @if (mr.LongestStreakEver is not null && mr.LongestStreakEver.Days > streak.Days)
-                                    {
-                                        <text>The @mr.MonthName record is @mr.LongestStreakEver.Days days, set in @mr.LongestStreakEver.Year.</text>
-                                    }
-                                </p>
-                            }
-                            else if (mr.LastYearWithLongerStreak.HasValue)
-                            {
-                                <p class="small text-muted mb-0">
-                                    The longest @mr.MonthName streak since <strong>@mr.LastYearWithLongerStreak</strong>
-                                    (@mr.YearsSinceLongerStreak @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceLongerStreak!.Value, "year")).
-                                    @if (mr.LongestStreakEver is not null)
-                                    {
-                                        <text>The @mr.MonthName record is @mr.LongestStreakEver.Days days, set in @mr.LongestStreakEver.Year.</text>
-                                    }
-                                </p>
-                            }
-                        </div>
-                    </div>
-                </section>
-            }
-
-            @* Only worth a callout when the milestone is genuinely infrequent — in Phoenix,
-               "first time since last year" is noise. *@
-            @if (mr.PeakMilestone.HasValue && mr.YearPeakHigh.HasValue
-                 && (!mr.LastYearAtMilestone.HasValue || mr.YearsSinceMilestone >= 3))
-            {
-                <section class="mb-4">
-                    <div class="card border-0 bg-light">
-                        <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-2">@mr.PeakMilestone°F Milestone</h3>
-                            @if (mr.LastYearAtMilestone.HasValue)
-                            {
-                                <p class="small text-muted mb-0">
-                                    @Model.Station.City reached <strong>@mr.YearPeakHigh°F</strong> in @mr.Year —
-                                    the first time it hit @mr.PeakMilestone°F since
-                                    <strong>@mr.LastYearAtMilestone</strong>
-                                    (@mr.YearsSinceMilestone @TodaysRecordHigh.Web.Models.MonthInReview.Pluralize(mr.YearsSinceMilestone!.Value, "year")).
-                                </p>
-                            }
-                            else
-                            {
-                                <p class="small text-muted mb-0">
-                                    @Model.Station.City reached <strong>@mr.YearPeakHigh°F</strong> in @mr.Year —
-                                    the first time it has ever hit @mr.PeakMilestone°F on record.
-                                </p>
-                            }
-                        </div>
-                    </div>
-                </section>
-            }
-
-            <hr class="section-divider" />
-
-            <!-- Every year's average for this calendar month -->
-            @if (mr.SameMonthHistory.Count > 3)
-            {
-                <section class="mb-4">
-                    <div class="card border-0 bg-light">
-                        <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-1">Average @mr.MonthName Temperature by Year</h3>
-                            <p class="text-muted small mb-3">
-                                @mr.SameMonthHistory.First().Year–@mr.SameMonthHistory.Last().Year &middot;
-                                @mr.Year highlighted
-                                @if (mr.SameMonthTrend is { } ttr && !ttr.IsFlat(0.05))
-                                {
-                                    <text>
-                                        &middot; trend @ttr.PerDecadeDisplay("F2")° per decade
-                                        (@(ttr.PerDecade >= 0 ? "warming" : "cooling") since @ttr.FirstYear)
-                                    </text>
-                                }
-                            </p>
-                            <div class="chart-container"><canvas id="monthHistoryChart"></canvas></div>
-                        </div>
-                    </div>
-                </section>
-                <hr class="section-divider" />
-            }
-
-            <!-- Precipitation for the month -->
-            @if (mp is not null)
-            {
-                var wetCss = mp.IsWetterThanNormal ? "primary" : "danger";
-                <section class="mb-4">
-                    <h2 class="h6 fw-bold mb-1">Precipitation — @mp.Label</h2>
-                    <p class="text-muted small mb-3">
-                        Month total against the 1991–2020 average and every other @mp.MonthName on record
-                    </p>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-6 col-md-3">
-                            <div class="card border-0 h-100 bg-light">
-                                <div class="card-body p-3">
-                                    <div class="stat-hero-temp text-@wetCss">@mp.TotalDisplay"</div>
-                                    <div class="small fw-semibold mt-1">Total precipitation</div>
-                                    <div class="text-muted" style="font-size:.8rem">@mp.Label</div>
-                                </div>
-                            </div>
-                        </div>
-                        @if (mp.NormalTotal.HasValue)
-                        {
-                            <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 bg-light">
-                                    <div class="card-body p-3">
-                                        <div class="fw-bold fs-5 text-@wetCss">@mp.DepartureDisplay"</div>
-                                        <div class="small fw-semibold mt-1">vs. average</div>
-                                        <div class="text-muted" style="font-size:.8rem">
-                                            Normal: @mp.NormalDisplay"
-                                            @if (mp.PercentOfNormal.HasValue)
-                                            {
-                                                <text>&middot; @mp.PercentOfNormal% of normal</text>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        <div class="col-6 col-md-3">
-                            <div class="card border-0 h-100 @(mp.IsNotableWet || mp.IsNotableDry ? "bg-warning bg-opacity-25" : "bg-light")">
-                                <div class="card-body p-3">
-                                    <div class="fw-bold fs-5">@mp.RankOrdinal-@mp.RankSuperlative</div>
-                                    <div class="small fw-semibold mt-1">@mp.MonthName rank</div>
-                                    <div class="text-muted" style="font-size:.8rem">
-                                        of @mp.TotalSameMonths on record
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="card border-0 h-100 bg-light">
-                                <div class="card-body p-3">
-                                    @if (mp.WettestSameMonthEver is not null)
-                                    {
-                                        <div class="fw-bold fs-5 text-primary">@mp.WettestSameMonthEver.Display"</div>
-                                        <div class="small fw-semibold mt-1">Wettest @mp.MonthName ever</div>
-                                        <div class="text-muted" style="font-size:.8rem">
-                                            @mp.WettestSameMonthEver.Year
-                                            @if (mp.DriestSameMonthEver is not null)
-                                            {
-                                                <text>&middot; driest @mp.DriestSameMonthEver.Display" (@mp.DriestSameMonthEver.Year)</text>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (mp.SameMonthHistory.Count > 3)
-                    {
-                        <div class="card border-0 bg-light">
-                            <div class="card-body">
-                                <h3 class="h6 fw-semibold mb-1">@mp.MonthName Precipitation by Year</h3>
-                                <p class="text-muted small mb-3">
-                                    @mp.SameMonthHistory.First().Year–@mp.SameMonthHistory.Last().Year &middot;
-                                    @mp.Year highlighted
-                                    @if (mp.SameMonthTrend is { } ptr && !ptr.IsFlat(0.005))
-                                    {
-                                        <text>
-                                            &middot; trend @ptr.PerDecadeDisplay()" per decade
-                                            (@(ptr.PerDecade >= 0 ? "wetter" : "drier") since @ptr.FirstYear)
-                                        </text>
-                                    }
-                                </p>
-                                <div class="chart-container"><canvas id="monthPrecipChart"></canvas></div>
-                            </div>
-                        </div>
-                    }
-
-                    @if (mp.TopSameMonths.Count > 1)
-                    {
-                        <div class="row g-4 mt-1">
-                            <div class="col-lg-6">
-                                <h3 class="h6 fw-bold mb-3">Wettest @(mp.MonthName)s on Record</h3>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                                        <thead class="table-primary">
-                                            <tr>
-                                                <th class="text-center" style="width:2.5rem">#</th>
-                                                <th>Year</th>
-                                                <th class="text-end">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        @for (var i = 0; i < mp.TopSameMonths.Count; i++)
-                                        {
-                                            var w = mp.TopSameMonths[i];
-                                            <tr class="@(w.Year == mp.Year ? "table-warning fw-semibold" : "")">
-                                                <td class="text-center text-muted">@(i + 1)</td>
-                                                <td>@w.Year</td>
-                                                <td class="text-end">@w.Display"</td>
-                                            </tr>
-                                        }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <h3 class="h6 fw-bold mb-3">Driest @(mp.MonthName)s on Record</h3>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                                        <thead style="background:#efe6d5;">
-                                            <tr>
-                                                <th class="text-center" style="width:2.5rem">#</th>
-                                                <th>Year</th>
-                                                <th class="text-end">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        @for (var i = 0; i < mp.DriestSameMonths.Count; i++)
-                                        {
-                                            var d = mp.DriestSameMonths[i];
-                                            <tr class="@(d.Year == mp.Year ? "table-warning fw-semibold" : "")">
-                                                <td class="text-center text-muted">@(i + 1)</td>
-                                                <td>@d.Year</td>
-                                                <td class="text-end">@d.Display"</td>
-                                            </tr>
-                                        }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </section>
-                <hr class="section-divider" />
-            }
-
-            <!-- Warmest months leaderboards -->
-            <section class="mb-4">
-                <div class="row g-4">
-                    <div class="col-lg-6">
-                        <h2 class="h6 fw-bold mb-3">Warmest @(mr.MonthName)s on Record</h2>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                                <thead class="table-danger">
-                                    <tr>
-                                        <th class="text-center" style="width:2.5rem">#</th>
-                                        <th>Year</th>
-                                        <th class="text-end">Avg Temp</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                @for (var i = 0; i < mr.TopSameMonths.Count; i++)
-                                {
-                                    var m = mr.TopSameMonths[i];
-                                    var isTarget = m.Year == mr.Year;
-                                    <tr class="@(isTarget ? "table-warning fw-semibold" : "")">
-                                        <td class="text-center text-muted">@(i + 1)</td>
-                                        <td>@m.Year</td>
-                                        <td class="text-end">@m.Display°F</td>
-                                    </tr>
-                                }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <h2 class="h6 fw-bold mb-3">Warmest Months on Record (Any Month)</h2>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                                <thead class="table-danger">
-                                    <tr>
-                                        <th class="text-center" style="width:2.5rem">#</th>
-                                        <th>Month</th>
-                                        <th class="text-end">Avg Temp</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                @for (var i = 0; i < mr.TopMonths.Count; i++)
-                                {
-                                    var m = mr.TopMonths[i];
-                                    var isTarget = m.Year == mr.Year && m.Month == mr.Month;
-                                    <tr class="@(isTarget ? "table-warning fw-semibold" : "")">
-                                        <td class="text-center text-muted">@(i + 1)</td>
-                                        <td>@m.Label</td>
-                                        <td class="text-end">@m.Display°F</td>
-                                    </tr>
-                                }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Regional context -->
-            @if (mr.Peers.Count > 0)
-            {
-                <hr class="section-divider" />
-                <section class="mb-4">
-                    <h2 class="h6 fw-bold mb-1">Nearby Stations — @mr.Label</h2>
-                    <p class="text-muted small mb-3">How the same month ranked at the closest reporting stations</p>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Station</th>
-                                    <th class="text-end">Avg Temp</th>
-                                    <th class="text-end">@mr.MonthName Rank</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="table-warning fw-semibold">
-                                    <td>@Model.Station.City, @Model.Station.State</td>
-                                    <td class="text-end">@mr.AvgTempDisplay°F</td>
-                                    <td class="text-end">@mr.RankSameMonthOrdinal of @mr.TotalSameMonths</td>
-                                </tr>
-                            @foreach (var p in mr.Peers)
-                            {
-                                <tr>
-                                    <td><a href="/stations/@p.Slug">@p.City, @p.State</a></td>
-                                    <td class="text-end">@p.Display°F</td>
-                                    <td class="text-end">
-                                        @p.RankOrdinal of @p.TotalSameMonths
-                                    </td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            }
-
-            <section class="p-4 bg-light rounded small text-muted mt-2">
-                <strong>About this data.</strong> Monthly averages are the mean of daily average temperatures,
-                computed from NOAA Threadex records via RCC ACIS. Months missing more than three days of
-                observations are excluded from the rankings, so the in-progress month never appears.
-                Rankings cover @(mr.TotalMonths.ToString("N0")) complete months on record.
-                @if (mp is not null)
-                {
-                    <text>
-                        Precipitation totals sum the daily reports for the month, with trace amounts counted
-                        as zero. A month missing any day of precipitation data is left out entirely
-                        (an unreported day is unreported rain), so the precipitation ranking covers
-                        @mp.TotalSameMonths complete @(mp.MonthName)s. Normals are the 1991–2020 mean for the
-                        same calendar month. Trend lines are a least-squares fit across every year shown.
-                    </text>
-                }
-            </section>
-
-            </div><!-- /#tab-month -->
-        }
-
-
-        <!-- ══════════════════════════════════════════════════════════════════
-             FALL TAB (meteorological September–November)
-        ═══════════════════════════════════════════════════════════════════ -->
-        @if (fr is not null)
-        {
-            <div class="tab-pane fade" id="tab-fall" role="tabpanel">
-
-            <!-- Headline -->
-            <section class="mb-4 pt-3">
-                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                     <div>
                         <p class="text-uppercase fw-semibold text-muted small mb-1">
-                            Fall in Review — <strong class="text-dark">@fr.Label</strong>
+                            Period Review — <strong class="text-dark">@cr2.Label</strong>
                         </p>
-                        <p class="text-muted small mb-0">@fr.WindowLabel</p>
+                        <p class="text-muted small mb-0">
+                            Any window, evaluated against every other year on record &mdash; @cr2.DayCount days
+                        </p>
                     </div>
-                    <form method="get" action="/stations/@Model.Station.Slug"
-                          class="d-flex align-items-end gap-2">
+                    <form method="get" action="/stations/@Model.Station.Slug" id="rangePickerForm"
+                          class="d-flex flex-wrap align-items-end gap-2">
                         <div>
-                            <label for="pickFall" class="form-label small text-muted mb-1">Fall of</label>
-                            <select class="form-select form-select-sm" id="pickFall" name="fall">
-                                @foreach (var y in fr.AvailableYears)
+                            <label for="rangeStartInput" class="form-label small text-muted mb-1">From</label>
+                            <input type="date" class="form-control form-control-sm" id="rangeStartInput"
+                                   style="width:9.5rem" />
+                        </div>
+                        <div>
+                            <label for="rangeEndInput" class="form-label small text-muted mb-1">To</label>
+                            <input type="date" class="form-control form-control-sm" id="rangeEndInput"
+                                   style="width:9.5rem" />
+                        </div>
+                        <input type="hidden" name="rangeStart" id="rangeStartHidden" value="@cr2.StartMonthDay" />
+                        <input type="hidden" name="rangeEnd" id="rangeEndHidden" value="@cr2.EndMonthDay" />
+                        <div>
+                            <label for="pickRangeYear" class="form-label small text-muted mb-1">Year</label>
+                            <select class="form-select form-select-sm" id="pickRangeYear" name="rangeYear" style="width:6.5rem">
+                                @foreach (var y in cr2.AvailableYears)
                                 {
-                                    <option value="@y" selected="@(y == fr.Year)">@y</option>
+                                    <option value="@y" selected="@(y == cr2.Year)">@y</option>
                                 }
                             </select>
                         </div>
                         <button type="submit" class="btn btn-sm btn-primary">View</button>
-                        @if (!fr.IsLatest)
-                        {
-                            <a href="/stations/@Model.Station.Slug" class="btn btn-sm btn-outline-secondary">Latest</a>
-                        }
                     </form>
                 </div>
 
-                @if (fr.IsInProgress)
+                <div class="d-flex flex-wrap gap-2 mb-1">
+                    <span class="text-muted small me-1 align-self-center">Quick picks:</span>
+                    @{
+                        var quickToday = DateTime.Now;
+                        (string Label, DateTime Start, DateTime End)[] quickRanges =
+                        [
+                            ("Last 7 days",  quickToday.AddDays(-8),  quickToday.AddDays(-1)),
+                            ("Last 30 days", quickToday.AddDays(-31), quickToday.AddDays(-1)),
+                            ("Last 90 days", quickToday.AddDays(-91), quickToday.AddDays(-1)),
+                            ("This month",   new DateTime(quickToday.Year, quickToday.Month, 1), quickToday.AddDays(-1)),
+                        ];
+                    }
+                    @foreach (var q in quickRanges)
+                    {
+                        var qStart = q.Start < new DateTime(quickToday.Year, 1, 1) ? new DateTime(quickToday.Year, 1, 1) : q.Start;
+                        var qEnd = q.End < qStart ? qStart : q.End;
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="/stations/@Model.Station.Slug?rangeStart=@qStart.ToString("MM-dd")&rangeEnd=@qEnd.ToString("MM-dd")">
+                            @q.Label
+                        </a>
+                    }
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="text-muted small me-1 align-self-center">Seasons:</span>
+                    @{
+                        // Meteorological seasons, non-wrapping only — Winter (Dec-Feb) crosses
+                        // Jan 1 and isn't supported by this engine yet. No year is passed, so
+                        // the server picks its own default (most recent complete, or the one
+                        // in progress) the same way the retired Fall tab used to.
+                        (string Label, string Start, string End)[] seasonRanges =
+                        [
+                            ("Spring (Mar–May)", "03-01", "05-31"),
+                            ("Summer (Jun–Aug)", "06-01", "08-31"),
+                            ("Fall (Sep–Nov)",   "09-01", "11-30"),
+                        ];
+                    }
+                    @foreach (var sr in seasonRanges)
+                    {
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="/stations/@Model.Station.Slug?rangeStart=@sr.Start&rangeEnd=@sr.End">
+                            @sr.Label
+                        </a>
+                    }
+                </div>
+
+                @if (cr2.IsInProgress)
                 {
                     <div class="alert alert-info py-2 small mb-3">
-                        Fall @fr.Year is still under way. Season totals and rankings appear once
-                        November closes; the markers below update as they happen.
+                        @cr2.Year is still under way for this window &mdash; totals and rankings appear once
+                        @(DateTime.ParseExact(cr2.EndMonthDay, "MM-dd", null).ToString("MMMM d")) passes.
                     </div>
                 }
 
-                @if (fr.Temp is not null || fr.Precip is not null)
+                @if (cr2.Temp is not null || cr2.Precip is not null)
                 {
                     <div class="row g-3">
-                        @if (fr.Temp is { } ft)
+                        @if (cr2.Temp is { } rt)
                         {
                             <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 @(ft.IsNotable ? "bg-warning bg-opacity-25" : "bg-light")">
+                                <div class="card border-0 h-100 @(rt.IsNotable ? "bg-warning bg-opacity-25" : "bg-light")">
                                     <div class="card-body p-3">
-                                        <div class="stat-hero-temp">@ft.AvgDisplay°F</div>
+                                        <div class="stat-hero-temp">@rt.AvgDisplay°F</div>
                                         <div class="small fw-semibold mt-1">Average temperature</div>
                                         <div class="text-muted" style="font-size:.8rem">
-                                            @ft.RankOrdinal-@ft.RankSuperlative of @ft.TotalSeasons
+                                            @rt.RankOrdinal-@rt.RankSuperlative of @rt.TotalSeasons
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            @if (ft.Normal.HasValue)
+                            @if (rt.Normal.HasValue)
                             {
                                 <div class="col-6 col-md-3">
                                     <div class="card border-0 h-100 bg-light">
                                         <div class="card-body p-3">
-                                            <div class="fw-bold fs-5 @(ft.Departure >= 0 ? "text-danger" : "text-primary")">
-                                                @ft.DepartureDisplay°
+                                            <div class="fw-bold fs-5 @(rt.Departure >= 0 ? "text-danger" : "text-primary")">
+                                                @rt.DepartureDisplay°
                                             </div>
                                             <div class="small fw-semibold mt-1">vs. average</div>
                                             <div class="text-muted" style="font-size:.8rem">
-                                                Normal: @ft.NormalDisplay°F (1991–2020)
+                                                Normal: @rt.NormalDisplay°F (1991–2020)
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             }
                         }
-                        @if (fr.Precip is { } fp)
+                        @if (cr2.Precip is { } rp)
                         {
                             <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 @(fp.IsNotable ? "bg-warning bg-opacity-25" : "bg-light")">
+                                <div class="card border-0 h-100 @(rp.IsNotable ? "bg-warning bg-opacity-25" : "bg-light")">
                                     <div class="card-body p-3">
-                                        <div class="stat-hero-temp @(fp.IsWetterThanNormal ? "text-primary" : "text-danger")">@fp.TotalDisplay"</div>
+                                        <div class="stat-hero-temp @(rp.IsWetterThanNormal ? "text-primary" : "text-danger")">@rp.TotalDisplay"</div>
                                         <div class="small fw-semibold mt-1">Precipitation</div>
                                         <div class="text-muted" style="font-size:.8rem">
-                                            @fp.RankOrdinal-@fp.RankSuperlative of @fp.TotalSeasons
+                                            @rp.RankOrdinal-@rp.RankSuperlative of @rp.TotalSeasons
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            @if (fp.Normal.HasValue)
+                            @if (rp.Normal.HasValue)
                             {
                                 <div class="col-6 col-md-3">
                                     <div class="card border-0 h-100 bg-light">
                                         <div class="card-body p-3">
-                                            <div class="fw-bold fs-5 @(fp.IsWetterThanNormal ? "text-primary" : "text-danger")">
-                                                @fp.DepartureDisplay"
+                                            <div class="fw-bold fs-5 @(rp.IsWetterThanNormal ? "text-primary" : "text-danger")">
+                                                @rp.DepartureDisplay"
                                             </div>
                                             <div class="small fw-semibold mt-1">vs. average</div>
                                             <div class="text-muted" style="font-size:.8rem">
-                                                Normal: @fp.NormalDisplay"
-                                                @if (fp.PercentOfNormal.HasValue)
+                                                Normal: @rp.NormalDisplay"
+                                                @if (rp.PercentOfNormal.HasValue)
                                                 {
-                                                    <text>&middot; @fp.PercentOfNormal% of normal</text>
+                                                    <text>&middot; @rp.PercentOfNormal% of normal</text>
                                                 }
                                             </div>
                                         </div>
@@ -1677,235 +1276,60 @@
 
             <hr class="section-divider" />
 
-            <!-- Season markers: the handoff from summer to winter -->
-            @if (fr.Markers.Count > 0)
-            {
-                <section class="mb-4">
-                    <h2 class="h6 fw-bold mb-1">Summer to Winter — @fr.Year</h2>
-                    <p class="text-muted small mb-3">
-                        Each turning point of the season against its 1991–2020 normal date, with the
-                        earliest and latest on record
-                    </p>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Marker</th>
-                                    <th>@fr.Year</th>
-                                    <th>Normal</th>
-                                    <th>vs. normal</th>
-                                    <th class="d-none d-md-table-cell">Earliest</th>
-                                    <th class="d-none d-md-table-cell">Latest</th>
-                                    <th class="text-end d-none d-lg-table-cell">Drift</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (var m in fr.Markers)
-                            {
-                                <tr>
-                                    <td>
-                                        <span class="fw-semibold">@m.Label</span>
-                                        <div class="text-muted" style="font-size:.78rem">@m.Note</div>
-                                    </td>
-                                    <td>
-                                        @if (m.Current is not null)
-                                        {
-                                            <span class="@(m.IsProvisional ? "text-muted" : "fw-semibold")">@m.Current.Display</span>
-                                            @if (m.IsProvisional)
-                                            {
-                                                <div class="text-muted" style="font-size:.72rem">so far</div>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">@(fr.IsInProgress ? "not yet" : "—")</span>
-                                        }
-                                    </td>
-                                    <td class="text-muted">@(m.NormalDisplay ?? "—")</td>
-                                    <td>
-                                        @if (m.VsNormalDisplay is { } v)
-                                        {
-                                            <span class="badge bg-@(m.IsLate ? "danger" : "primary") bg-opacity-10 @(m.IsLate ? "text-danger" : "text-primary")">
-                                                @v
-                                            </span>
-                                        }
-                                    </td>
-                                    <td class="text-muted small d-none d-md-table-cell">
-                                        @if (m.Earliest is not null) { <text>@m.Earliest.Display, @m.Earliest.Year</text> }
-                                    </td>
-                                    <td class="text-muted small d-none d-md-table-cell">
-                                        @if (m.Latest is not null) { <text>@m.Latest.Display, @m.Latest.Year</text> }
-                                    </td>
-                                    <td class="text-end text-muted small d-none d-lg-table-cell">
-                                        @if (m.DoyTrend is { } t && !t.IsFlat(0.05))
-                                        {
-                                            <text>@t.PerDecadeDisplay("F1") d/decade</text>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="text-muted small mt-2 mb-0">
-                        Drift is a least-squares fit across every year on record. Positive means the
-                        marker has been arriving later.
-                    </p>
-                </section>
-
-                <hr class="section-divider" />
-            }
-
-            <!-- First freeze -->
-            @if (freezeMarker is not null && freezeMarker.History.Count > 5)
-            {
-                <section class="mb-4">
-                    <h2 class="h6 fw-bold mb-1">First Freeze by Year</h2>
-                    <p class="text-muted small mb-3">
-                        The first 32°F night of each autumn since @freezeMarker.History[0].Year
-                        @if (freezeMarker.DoyTrend is { } ft2 && !ft2.IsFlat(0.05))
-                        {
-                            <text>
-                                &middot; trending <strong>@ft2.PerDecadeDisplay("F1") days
-                                @(ft2.PerDecade >= 0 ? "later" : "earlier")</strong> per decade
-                            </text>
-                        }
-                    </p>
-                    <div class="chart-container"><canvas id="fallFreezeChart"></canvas></div>
-                </section>
-            }
-
-            <!-- Growing season -->
-            @if (fr.Growing is { } gs && gs.History.Count > 5)
-            {
-                <section class="mb-4">
-                    <div class="row g-3 mb-3">
-                        @if (gs.Days.HasValue)
-                        {
-                            <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 bg-light">
-                                    <div class="card-body p-3">
-                                        <div class="stat-hero-temp text-success">@gs.Days</div>
-                                        <div class="small fw-semibold mt-1">Freeze-free days</div>
-                                        <div class="text-muted" style="font-size:.8rem">@fr.Year growing season</div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (gs.NormalDays.HasValue)
-                        {
-                            <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 bg-light">
-                                    <div class="card-body p-3">
-                                        <div class="fw-bold fs-5">@gs.NormalDays.Value.ToString("F0")</div>
-                                        <div class="small fw-semibold mt-1">Normal length</div>
-                                        <div class="text-muted" style="font-size:.8rem">
-                                            @(gs.VsNormalDisplay ?? "1991–2020 average")
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (gs.Longest is { } lg)
-                        {
-                            <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 bg-light">
-                                    <div class="card-body p-3">
-                                        <div class="fw-bold fs-5">@lg.Days</div>
-                                        <div class="small fw-semibold mt-1">Longest on record</div>
-                                        <div class="text-muted" style="font-size:.8rem">@lg.Year</div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (gs.Shortest is { } sh)
-                        {
-                            <div class="col-6 col-md-3">
-                                <div class="card border-0 h-100 bg-light">
-                                    <div class="card-body p-3">
-                                        <div class="fw-bold fs-5">@sh.Days</div>
-                                        <div class="small fw-semibold mt-1">Shortest on record</div>
-                                        <div class="text-muted" style="font-size:.8rem">@sh.Year</div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                    <div class="card border-0 bg-light">
-                        <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-1">Growing Season Length by Year</h3>
-                            <p class="text-muted small mb-3">
-                                Days between the last spring freeze and the first fall freeze
-                                @if (gs.DaysTrend is { } gt && !gt.IsFlat(0.05))
-                                {
-                                    <text>
-                                        &middot; trending <strong>@gt.PerDecadeDisplay("F1") days
-                                        @(gt.PerDecade >= 0 ? "longer" : "shorter")</strong> per decade
-                                    </text>
-                                }
-                            </p>
-                            <div class="chart-container"><canvas id="growingSeasonChart"></canvas></div>
-                        </div>
-                    </div>
-                </section>
-
-                <hr class="section-divider" />
-            }
-
-            <!-- Seasonal temperature -->
-            @if (fr.TempHistory.Count > 3)
+            <!-- Temperature by year -->
+            @if (cr2.TempHistory.Count > 3)
             {
                 <section class="mb-4">
                     <div class="card border-0 bg-light">
                         <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-1">Fall Average Temperature by Year</h3>
+                            <h3 class="h6 fw-semibold mb-1">Average Temperature by Year — @cr2.RangeLabel</h3>
                             <p class="text-muted small mb-3">
-                                @fr.TempHistory[0].Year–@fr.TempHistory[^1].Year &middot; @fr.Year highlighted
-                                @if (fr.TempTrend is { } tt2 && !tt2.IsFlat(0.05))
+                                @cr2.TempHistory[0].Year–@cr2.TempHistory[^1].Year &middot; @cr2.Year highlighted
+                                @if (cr2.TempTrend is { } rtt && !rtt.IsFlat(0.05))
                                 {
                                     <text>
-                                        &middot; trend @tt2.PerDecadeDisplay("F2")° per decade
-                                        (@(tt2.PerDecade >= 0 ? "warming" : "cooling") since @tt2.FirstYear)
+                                        &middot; trend @rtt.PerDecadeDisplay("F2")° per decade
+                                        (@(rtt.PerDecade >= 0 ? "warming" : "cooling") since @rtt.FirstYear)
                                     </text>
                                 }
                             </p>
-                            <div class="chart-container"><canvas id="fallTempChart"></canvas></div>
+                            <div class="chart-container"><canvas id="rangeTempChart"></canvas></div>
                         </div>
                     </div>
                 </section>
             }
 
-            <!-- Seasonal precipitation -->
-            @if (fr.PrecipHistory.Count > 3)
+            <!-- Precipitation by year -->
+            @if (cr2.PrecipHistory.Count > 3)
             {
                 <section class="mb-4">
                     <div class="card border-0 bg-light">
                         <div class="card-body">
-                            <h3 class="h6 fw-semibold mb-1">Fall Precipitation by Year</h3>
+                            <h3 class="h6 fw-semibold mb-1">Precipitation by Year — @cr2.RangeLabel</h3>
                             <p class="text-muted small mb-3">
-                                @fr.PrecipHistory[0].Year–@fr.PrecipHistory[^1].Year &middot; @fr.Year highlighted
-                                @if (fr.PrecipTrend is { } pt2 && !pt2.IsFlat(0.005))
+                                @cr2.PrecipHistory[0].Year–@cr2.PrecipHistory[^1].Year &middot; @cr2.Year highlighted
+                                @if (cr2.PrecipTrend is { } rpt && !rpt.IsFlat(0.005))
                                 {
                                     <text>
-                                        &middot; trend @pt2.PerDecadeDisplay()" per decade
-                                        (@(pt2.PerDecade >= 0 ? "wetter" : "drier") since @pt2.FirstYear)
+                                        &middot; trend @rpt.PerDecadeDisplay()" per decade
+                                        (@(rpt.PerDecade >= 0 ? "wetter" : "drier") since @rpt.FirstYear)
                                     </text>
                                 }
                             </p>
-                            <div class="chart-container"><canvas id="fallPrecipChart"></canvas></div>
+                            <div class="chart-container"><canvas id="rangePrecipChart"></canvas></div>
                         </div>
                     </div>
                 </section>
             }
 
             <!-- Leaderboards -->
-            @if (fr.Temp is { } ftl)
+            @if (cr2.Temp is { } rtl)
             {
                 <hr class="section-divider" />
                 <section class="mb-4">
                     <div class="row g-4">
                         <div class="col-lg-6">
-                            <h2 class="h6 fw-bold mb-3">Warmest Falls on Record</h2>
+                            <h2 class="h6 fw-bold mb-3">Warmest @cr2.RangeLabel on Record</h2>
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered table-hover align-middle mb-0">
                                     <thead class="table-danger">
@@ -1916,13 +1340,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    @for (var i = 0; i < ftl.Warmest.Count; i++)
+                                    @for (var i = 0; i < rtl.Warmest.Count; i++)
                                     {
-                                        var f = ftl.Warmest[i];
-                                        <tr class="@(f.Year == fr.Year ? "table-warning fw-semibold" : "")">
+                                        var s = rtl.Warmest[i];
+                                        <tr class="@(s.Year == cr2.Year ? "table-warning fw-semibold" : "")">
                                             <td class="text-center text-muted">@(i + 1)</td>
-                                            <td>@f.Year</td>
-                                            <td class="text-end">@f.TempDisplay°F</td>
+                                            <td>@s.Year</td>
+                                            <td class="text-end">@TodaysRecordHigh.Web.Models.TempFormat.Temp1(s.AvgTemp!.Value)°F</td>
                                         </tr>
                                     }
                                     </tbody>
@@ -1930,7 +1354,7 @@
                             </div>
                         </div>
                         <div class="col-lg-6">
-                            <h2 class="h6 fw-bold mb-3">Coolest Falls on Record</h2>
+                            <h2 class="h6 fw-bold mb-3">Coolest @cr2.RangeLabel on Record</h2>
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered table-hover align-middle mb-0">
                                     <thead class="table-primary">
@@ -1941,13 +1365,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    @for (var i = 0; i < ftl.Coldest.Count; i++)
+                                    @for (var i = 0; i < rtl.Coldest.Count; i++)
                                     {
-                                        var f = ftl.Coldest[i];
-                                        <tr class="@(f.Year == fr.Year ? "table-warning fw-semibold" : "")">
+                                        var s = rtl.Coldest[i];
+                                        <tr class="@(s.Year == cr2.Year ? "table-warning fw-semibold" : "")">
                                             <td class="text-center text-muted">@(i + 1)</td>
-                                            <td>@f.Year</td>
-                                            <td class="text-end">@f.TempDisplay°F</td>
+                                            <td>@s.Year</td>
+                                            <td class="text-end">@TodaysRecordHigh.Web.Models.TempFormat.Temp1(s.AvgTemp!.Value)°F</td>
                                         </tr>
                                     }
                                     </tbody>
@@ -1958,12 +1382,12 @@
                 </section>
             }
 
-            @if (fr.Precip is { } fpl)
+            @if (cr2.Precip is { } rpl)
             {
                 <section class="mb-4">
                     <div class="row g-4">
                         <div class="col-lg-6">
-                            <h2 class="h6 fw-bold mb-3">Wettest Falls on Record</h2>
+                            <h2 class="h6 fw-bold mb-3">Wettest @cr2.RangeLabel on Record</h2>
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered table-hover align-middle mb-0">
                                     <thead class="table-primary">
@@ -1974,13 +1398,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    @for (var i = 0; i < fpl.Wettest.Count; i++)
+                                    @for (var i = 0; i < rpl.Wettest.Count; i++)
                                     {
-                                        var f = fpl.Wettest[i];
-                                        <tr class="@(f.Year == fr.Year ? "table-warning fw-semibold" : "")">
+                                        var s = rpl.Wettest[i];
+                                        <tr class="@(s.Year == cr2.Year ? "table-warning fw-semibold" : "")">
                                             <td class="text-center text-muted">@(i + 1)</td>
-                                            <td>@f.Year</td>
-                                            <td class="text-end">@f.PrecipDisplay"</td>
+                                            <td>@s.Year</td>
+                                            <td class="text-end">@s.Precip!.Value.ToString("F2")"</td>
                                         </tr>
                                     }
                                     </tbody>
@@ -1988,7 +1412,7 @@
                             </div>
                         </div>
                         <div class="col-lg-6">
-                            <h2 class="h6 fw-bold mb-3">Driest Falls on Record</h2>
+                            <h2 class="h6 fw-bold mb-3">Driest @cr2.RangeLabel on Record</h2>
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered table-hover align-middle mb-0">
                                     <thead style="background:#efe6d5;">
@@ -1999,13 +1423,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    @for (var i = 0; i < fpl.Driest.Count; i++)
+                                    @for (var i = 0; i < rpl.Driest.Count; i++)
                                     {
-                                        var f = fpl.Driest[i];
-                                        <tr class="@(f.Year == fr.Year ? "table-warning fw-semibold" : "")">
+                                        var s = rpl.Driest[i];
+                                        <tr class="@(s.Year == cr2.Year ? "table-warning fw-semibold" : "")">
                                             <td class="text-center text-muted">@(i + 1)</td>
-                                            <td>@f.Year</td>
-                                            <td class="text-end">@f.PrecipDisplay"</td>
+                                            <td>@s.Year</td>
+                                            <td class="text-end">@s.Precip!.Value.ToString("F2")"</td>
                                         </tr>
                                     }
                                     </tbody>
@@ -2017,17 +1441,17 @@
             }
 
             <section class="p-4 bg-light rounded small text-muted mt-2">
-                <strong>About this data.</strong> Fall is meteorological autumn, September 1 through
-                November 30, the window NOAA uses for seasonal statistics. Seasonal temperature is the
-                day-weighted mean of the three monthly means; precipitation is their sum, and a season
-                missing any of the three months is left out of the rankings. Freeze, heat and snow
-                markers come from daily NOAA Threadex observations via RCC ACIS: freezes and snow are
-                the first occurrence on or after July 1, and the last 90°F and 80°F days are the final
-                ones anywhere in the calendar year. Growing season counts the freeze-free days between
-                the last spring 32°F and the first fall 32°F.
+                <strong>About this data.</strong> Pick any start and end date and this becomes the same
+                kind of review as the Month and Fall tabs, just for exactly the window you asked for &mdash;
+                the generalized version of the same engine, evaluated across every year on record.
+                Average temperature is the mean of each day's (high + low) / 2; precipitation is the sum
+                of daily totals. A year missing more than about a fifth of the window's days is excluded
+                from the temperature ranking; any missing day excludes a year from the precipitation
+                ranking, since an unreported day is unreported rain. Ranges that cross from December into
+                January aren't supported yet. Normals are the 1991–2020 mean for the same window.
             </section>
 
-            </div><!-- /#tab-fall -->
+            </div><!-- /#tab-range -->
         }
 
         </div><!-- /.tab-content -->
@@ -2045,150 +1469,46 @@
     Chart.defaults.font.family = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
     Chart.defaults.font.size = 12;
 
+    // Day-of-year rendered as a date, against a non-leap reference year. Shared by every
+    // chart plotting a "which date did this happen on" axis.
+    const doyLabel = doy => {
+        const d = new Date(Date.UTC(2001, 0, 1));
+        d.setUTCDate(d.getUTCDate() + Math.round(doy) - 1);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+
     // ── Lazy-init: all charts are in non-default tabs ───────────────────
     let heatInited   = false;
     let precipInited = false;
-    let monthInited  = false;
-    let fallInited   = false;
+    let thisYearInited = false;
+    let rangeInited  = false;
+
+    // First & Last Dates is on the default (Records) tab, already visible on load, so
+    // its click handlers attach immediately — only the chart itself waits for a click.
+    initClimateMarkerCharts();
 
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
         btn.addEventListener('shown.bs.tab', e => {
             const target = e.target.getAttribute('data-bs-target');
-            if (target === '#tab-heat'          && !heatInited)   { heatInited   = true; initHeatCharts(); }
-            if (target === '#tab-precipitation' && !precipInited) { precipInited = true; initPrecipCharts(); }
-            if (target === '#tab-month'         && !monthInited)  { monthInited  = true; initMonthChart(); }
-            if (target === '#tab-fall'          && !fallInited)   { fallInited   = true; initFallCharts(); }
+            if (target === '#tab-heat'          && !heatInited)     { heatInited     = true; initHeatCharts(); }
+            if (target === '#tab-precipitation' && !precipInited)   { precipInited   = true; initPrecipCharts(); }
+            if (target === '#tab-thisyear'      && !thisYearInited) { thisYearInited = true; initThisYearCharts(); }
+            if (target === '#tab-range'         && !rangeInited)    { rangeInited    = true; initRangeCharts(); }
         });
     });
 
-    // ── Month picker ─────────────────────────────────────────────────────
-    // The month under review is a round trip, so the picker rewrites its own year
-    // list from the station's record and the page comes back on the same tab.
-    (function initMonthPicker() {
-        const form = document.getElementById('monthPickerForm');
-        if (!form) return;
+    initRangePicker();
 
-        const yearsByMonth = @Html.Raw(availableYearsJson);
-        const monthSel = document.getElementById('pickMonth');
-        const yearSel  = document.getElementById('pickYear');
-
-        monthSel.addEventListener('change', () => {
-            const years = yearsByMonth[monthSel.value] || [];
-            const wanted = yearSel.value;
-            yearSel.innerHTML = '';
-            for (const y of years) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                yearSel.appendChild(opt);
-            }
-            // Keep the year the reader was already looking at where that month has one.
-            yearSel.value = years.includes(Number(wanted)) ? wanted : (years[0] ?? '');
-        });
-    })();
-
-    // A month picked from the query string belongs on the Month in Review tab.
+    // A range picked from the query string belongs on the Period Review tab.
     (function openRequestedTab() {
         const params = new URLSearchParams(window.location.search);
-        const target = params.has('fall') ? '#tab-fall'
-                     : params.has('month') ? '#tab-month'
-                     : null;
+        const target = (params.has('rangeStart') || params.has('rangeEnd')) ? '#tab-range' : null;
         if (!target) return;
         const btn = document.querySelector(`[data-bs-target="${target}"]`);
         if (btn && window.bootstrap) bootstrap.Tab.getOrCreateInstance(btn).show();
     })();
 
     // ── Month in Review ──────────────────────────────────────────────────
-    function initMonthChart() {
-        const monthData      = @Html.Raw(monthHistoryJson);
-        const monthNormal    = @Html.Raw(monthNormalJson);
-        const monthTempTrend = @Html.Raw(monthTempTrendJson);
-        const targetYear     = @(mr?.Year ?? 0);
-
-        initMonthPrecipChart(targetYear);
-
-        const ctx = document.getElementById('monthHistoryChart');
-        if (!ctx || !monthData.length) return;
-
-        const temps  = monthData.map(d => d.avg);
-        const minT   = Math.min(...temps), maxT = Math.max(...temps);
-        const colors = monthData.map(d => {
-            if (d.year === targetYear) return 'rgba(234,179,8,0.95)';
-            // Cool blue → hot red across the station's own range for this month
-            const t = (d.avg - minT) / Math.max(maxT - minT, 0.1);
-            const r = Math.round(59  + t * 180);
-            const g = Math.round(130 - t * 80);
-            const b = Math.round(246 - t * 190);
-            return `rgba(${r},${g},${b},0.8)`;
-        });
-
-        const datasets = [{
-            type: 'bar',
-            label: 'Average temperature (°F)',
-            data: temps,
-            backgroundColor: colors,
-            borderWidth: 0,
-            borderRadius: 2,
-            order: 2
-        }];
-
-        if (monthNormal !== null) {
-            datasets.push({
-                type: 'line',
-                label: '1991–2020 average',
-                data: monthData.map(() => monthNormal),
-                borderColor: 'rgba(15,23,42,0.55)',
-                borderDash: [6, 4],
-                borderWidth: 1.5,
-                pointRadius: 0,
-                fill: false,
-                order: 1
-            });
-        }
-
-        if (monthTempTrend) {
-            datasets.push(trendDataset(monthData, monthTempTrend, 'Trend', 'rgba(220,38,38,0.9)'));
-        }
-
-        new Chart(ctx, {
-            data: { labels: monthData.map(d => d.year), datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: datasets.length > 1,
-                        labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (item) => {
-                                // Reference lines identify themselves; only the bars get a departure.
-                                if (item.dataset.type === 'line')
-                                    return `${item.dataset.label}: ${item.parsed.y.toFixed(1)}°F`;
-                                const d = monthData[item.dataIndex];
-                                const lines = [`Average: ${d.avg.toFixed(1)}°F`];
-                                if (monthNormal !== null) {
-                                    const dep = d.avg - monthNormal;
-                                    lines.push(`${dep >= 0 ? '+' : ''}${dep.toFixed(1)}°F vs. average`);
-                                }
-                                return lines;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } },
-                    y: {
-                        grid: { color: 'rgba(0,0,0,0.06)' },
-                        ticks: { callback: v => v + '°' },
-                        // Bars start well below the data so year-to-year differences stay legible
-                        min: Math.floor((minT - 2) / 5) * 5
-                    }
-                }
-            }
-        });
-    }
-
     // A fitted line the server computed — drawn across the same year axis as the bars.
     function trendDataset(rows, trend, label, color) {
         return {
@@ -2203,146 +1523,53 @@
         };
     }
 
-    // Every year's total for the month under review, against its own normal and trend.
-    function initMonthPrecipChart(targetYear) {
-        const precipData   = @Html.Raw(monthPrecipJson);
-        const precipNormal = @Html.Raw(monthPrecipNormalJson);
-        const precipTrend  = @Html.Raw(monthPrecipTrendJson);
-        const ctx = document.getElementById('monthPrecipChart');
-        if (!ctx || !precipData.length) return;
+    // ── First & Last Dates: click a row to expand its year-by-year chart ───
+    function initClimateMarkerCharts() {
+        const markerData = @Html.Raw(climateMarkerHistoryJson);
+        const charts = {}; // marker key -> Chart instance, built once, reused on re-expand
 
-        const totals = precipData.map(d => d.total);
-        const maxP   = Math.max(...totals);
+        function buildChart(canvas, data) {
+            const rows = data.history;
+            const latestYear = rows.length ? rows[rows.length - 1].year : null;
+            const doys = rows.map(r => r.doy);
 
-        // Wet years read blue, dry years tan, against the normal where there is one.
-        const midpoint = precipNormal !== null ? precipNormal : maxP / 2;
-        const colors = precipData.map(d => {
-            if (d.year === targetYear) return 'rgba(234,179,8,0.95)';
-            return d.total >= midpoint ? 'rgba(37,99,235,0.75)' : 'rgba(180,140,90,0.7)';
-        });
-
-        const datasets = [{
-            type: 'bar',
-            label: 'Precipitation (in)',
-            data: totals,
-            backgroundColor: colors,
-            borderWidth: 0,
-            borderRadius: 2,
-            order: 2
-        }];
-
-        if (precipNormal !== null) {
-            datasets.push({
-                type: 'line',
-                label: '1991–2020 average',
-                data: precipData.map(() => precipNormal),
-                borderColor: 'rgba(15,23,42,0.55)',
-                borderDash: [6, 4],
-                borderWidth: 1.5,
-                pointRadius: 0,
-                fill: false,
-                order: 1
-            });
-        }
-
-        if (precipTrend) {
-            datasets.push(trendDataset(precipData, precipTrend, 'Trend', 'rgba(13,110,253,0.9)'));
-        }
-
-        new Chart(ctx, {
-            data: { labels: precipData.map(d => d.year), datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: datasets.length > 1,
-                        labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (item) => {
-                                if (item.dataset.type === 'line')
-                                    return `${item.dataset.label}: ${item.parsed.y.toFixed(2)}"`;
-                                const d = precipData[item.dataIndex];
-                                const lines = [`Total: ${d.total.toFixed(2)}"`];
-                                if (precipNormal !== null) {
-                                    const dep = d.total - precipNormal;
-                                    lines.push(`${dep >= 0 ? '+' : ''}${dep.toFixed(2)}" vs. average`);
-                                    if (precipNormal > 0)
-                                        lines.push(`${Math.round(d.total / precipNormal * 100)}% of normal`);
-                                }
-                                return lines;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.06)' },
-                        ticks: { callback: v => v + '"' }
-                    }
-                }
-            }
-        });
-    }
-
-    // ── Fall ─────────────────────────────────────────────────────────────
-    function initFallCharts() {
-        const fallYear = @fallYear;
-
-        // Day-of-year rendered as a date, against a non-leap reference year.
-        const doyLabel = doy => {
-            const d = new Date(Date.UTC(2001, 0, 1));
-            d.setUTCDate(d.getUTCDate() + Math.round(doy) - 1);
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-        };
-
-        // First freeze: plotted as day-of-year so a later date sits higher.
-        const freezeData   = @Html.Raw(fallFreezeJson);
-        const freezeTrend  = @Html.Raw(fallFreezeTrendJson);
-        const freezeNormal = @Html.Raw(fallFreezeNormalJson);
-        const freezeCtx = document.getElementById('fallFreezeChart');
-        if (freezeCtx && freezeData.length) {
             const datasets = [{
                 type: 'bar',
-                label: 'First 32°F',
-                data: freezeData.map(d => d.doy),
-                backgroundColor: freezeData.map(d =>
-                    d.year === fallYear ? 'rgba(234,179,8,0.95)' : 'rgba(37,99,235,0.6)'),
+                label: data.label,
+                data: doys,
+                backgroundColor: rows.map(r =>
+                    r.year === latestYear ? 'rgba(234,179,8,0.95)' : 'rgba(37,99,235,0.6)'),
                 borderWidth: 0,
                 borderRadius: 2,
                 order: 2
             }];
-            if (freezeNormal !== null) {
+
+            if (data.normalDoy !== null) {
                 datasets.push({
                     type: 'line', label: '1991–2020 normal',
-                    data: freezeData.map(() => freezeNormal),
+                    data: rows.map(() => data.normalDoy),
                     borderColor: 'rgba(15,23,42,0.55)', borderDash: [6, 4], borderWidth: 1.5,
                     pointRadius: 0, fill: false, order: 1
                 });
             }
-            if (freezeTrend) {
-                datasets.push({
-                    type: 'line', label: 'Trend',
-                    data: freezeData.map(d => freezeTrend.intercept + freezeTrend.perYear * d.year),
-                    borderColor: 'rgba(220,38,38,0.9)', borderWidth: 2, pointRadius: 0,
-                    fill: false, order: 0
-                });
+            if (data.trend) {
+                datasets.push(trendDataset(rows, data.trend, 'Trend', 'rgba(220,38,38,0.9)'));
             }
-            const doys = freezeData.map(d => d.doy);
-            new Chart(freezeCtx, {
-                data: { labels: freezeData.map(d => d.year), datasets },
+
+            return new Chart(canvas, {
+                data: { labels: rows.map(r => r.year), datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: datasets.length > 1, labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 } },
+                        legend: {
+                            display: datasets.length > 1,
+                            labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 }
+                        },
                         tooltip: {
                             callbacks: {
                                 label: item => item.dataset.type === 'line'
                                     ? `${item.dataset.label}: ${doyLabel(item.parsed.y)}`
-                                    : `First freeze: ${freezeData[item.dataIndex].date}`
+                                    : `${rows[item.dataIndex].date}, ${rows[item.dataIndex].year} (${rows[item.dataIndex].value}${data.unit})`
                             }
                         }
                     },
@@ -2359,79 +1586,30 @@
             });
         }
 
-        const growingData  = @Html.Raw(growingJson);
-        const growingTrend = @Html.Raw(growingTrendJson);
-        const growCtx = document.getElementById('growingSeasonChart');
-        if (growCtx && growingData.length) {
-            const datasets = [{
-                type: 'bar', label: 'Freeze-free days',
-                data: growingData.map(d => d.days),
-                backgroundColor: growingData.map(d =>
-                    d.year === fallYear ? 'rgba(234,179,8,0.95)' : 'rgba(22,163,74,0.6)'),
-                borderWidth: 0, borderRadius: 2, order: 2
-            }];
-            if (growingTrend) {
-                datasets.push({
-                    type: 'line', label: 'Trend',
-                    data: growingData.map(d => growingTrend.intercept + growingTrend.perYear * d.year),
-                    borderColor: 'rgba(21,94,117,0.9)', borderWidth: 2, pointRadius: 0,
-                    fill: false, order: 0
-                });
-            }
-            new Chart(growCtx, {
-                data: { labels: growingData.map(d => d.year), datasets },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: datasets.length > 1, labels: { boxWidth: 12, filter: i => i.datasetIndex > 0 } },
-                        tooltip: {
-                            callbacks: {
-                                label: item => item.dataset.type === 'line'
-                                    ? `Trend: ${item.parsed.y.toFixed(0)} days`
-                                    : `${item.raw} freeze-free days`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } },
-                        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v + 'd' } }
-                    }
+        document.querySelectorAll('.climate-row-clickable').forEach(row => {
+            const key = row.dataset.markerKey;
+            const panel = document.querySelector(`.climate-expand[data-marker-key="${key}"]`);
+            const data = markerData[key];
+            if (!panel || !data) return;
+
+            function toggle() {
+                const expanded = row.getAttribute('aria-expanded') === 'true';
+                row.setAttribute('aria-expanded', String(!expanded));
+                panel.hidden = expanded;
+                if (!expanded && !charts[key]) {
+                    charts[key] = buildChart(panel.querySelector('canvas'), data);
                 }
+            }
+
+            row.addEventListener('click', toggle);
+            row.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
             });
-        }
-
-        seasonSeriesChart({
-            ctx: document.getElementById('fallTempChart'),
-            rows: @Html.Raw(fallTempJson),
-            value: d => d.avg,
-            normal: @Html.Raw(fallTempNormalJson),
-            trend: @Html.Raw(fallTempTrendJson),
-            highlight: fallYear,
-            barColor: (d, t) => `rgba(${Math.round(59 + t * 180)},${Math.round(130 - t * 80)},${Math.round(246 - t * 190)},0.8)`,
-            unit: '°',
-            decimals: 1,
-            label: 'Average temperature (°F)',
-            beginAtZero: false
-        });
-
-        seasonSeriesChart({
-            ctx: document.getElementById('fallPrecipChart'),
-            rows: @Html.Raw(fallPrecipJson),
-            value: d => d.total,
-            normal: @Html.Raw(fallPrecipNormalJson),
-            trend: @Html.Raw(fallPrecipTrendJson),
-            highlight: fallYear,
-            barColor: (d, t, normal) => (normal !== null ? d.value >= normal : t >= 0.5)
-                ? 'rgba(37,99,235,0.75)' : 'rgba(180,140,90,0.7)',
-            unit: '"',
-            decimals: 2,
-            label: 'Precipitation (in)',
-            beginAtZero: true
         });
     }
 
-    // Bars for one value per year, with the season under review picked out, plus the
-    // normal and the fitted trend. Shared by the fall temperature and precip charts.
+    // Bars for one value per year, with the reviewed year picked out, plus the normal
+    // and the fitted trend. Shared by Period Review's temperature and precip charts.
     function seasonSeriesChart(cfg) {
         if (!cfg.ctx || !cfg.rows.length) return;
 
@@ -2500,63 +1678,193 @@
         });
     }
 
-    // ── Heat Charts ──────────────────────────────────────────────────────
-    function initHeatCharts() {
+    // ── Custom Range ─────────────────────────────────────────────────────
+    function initRangeCharts() {
+        const rangeYear = @rangeYearValue;
 
-    // YTD Departure from Normal
-    const ytdData = @Html.Raw(ytdJson);
-    const deptCtx = document.getElementById('departureChart');
-    if (deptCtx && ytdData.length > 0) {
-        const labels = ytdData.map(d => {
-            const dt = new Date(d.date + 'T00:00:00');
-            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        seasonSeriesChart({
+            ctx: document.getElementById('rangeTempChart'),
+            rows: @Html.Raw(rangeTempJson),
+            value: d => d.avg,
+            normal: @Html.Raw(rangeTempNormalJson),
+            trend: @Html.Raw(rangeTempTrendJson),
+            highlight: rangeYear,
+            barColor: (d, t) => `rgba(${Math.round(59 + t * 180)},${Math.round(130 - t * 80)},${Math.round(246 - t * 190)},0.8)`,
+            unit: '°',
+            decimals: 1,
+            label: 'Average temperature (°F)',
+            beginAtZero: false
         });
-        const step = Math.max(1, Math.floor(ytdData.length / 18));
-        const filteredLabels = labels.map((l, i) => i % step === 0 ? l : '');
-        new Chart(deptCtx, {
-            type: 'bar',
-            data: {
-                labels: filteredLabels,
-                datasets: [{
-                    label: 'Departure from Normal (°F)',
-                    data: ytdData.map(d => d.departure),
-                    backgroundColor: ytdData.map(d =>
-                        d.departure > 0 ? 'rgba(239,68,68,0.75)' : 'rgba(59,130,246,0.75)'
-                    ),
-                    borderWidth: 0, borderRadius: 2
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            title: (items) => {
-                                const d = ytdData[items[0].dataIndex];
-                                return new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                            },
-                            label: (item) => {
-                                const d = ytdData[item.dataIndex];
-                                const lines = [];
-                                if (d.actual != null) lines.push(`Actual: ${d.actual}°F`);
-                                if (d.normal != null) lines.push(`Normal: ${d.normal}°F`);
-                                if (d.departure != null) {
-                                    const sign = d.departure >= 0 ? '+' : '';
-                                    lines.push(`Departure: ${sign}${d.departure.toFixed(1)}°F`);
-                                }
-                                return lines;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { maxRotation: 0 } },
-                    y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => (v >= 0 ? '+' : '') + v + '°' } }
-                }
-            }
+
+        seasonSeriesChart({
+            ctx: document.getElementById('rangePrecipChart'),
+            rows: @Html.Raw(rangePrecipJson),
+            value: d => d.total,
+            normal: @Html.Raw(rangePrecipNormalJson),
+            trend: @Html.Raw(rangePrecipTrendJson),
+            highlight: rangeYear,
+            barColor: (d, t, normal) => (normal !== null ? d.value >= normal : t >= 0.5)
+                ? 'rgba(37,99,235,0.75)' : 'rgba(180,140,90,0.7)',
+            unit: '"',
+            decimals: 2,
+            label: 'Precipitation (in)',
+            beginAtZero: true
         });
     }
+
+    // The server works in MM-DD only (a window repeated across every year on record);
+    // the date inputs need a full date to render, so a fixed reference year fills that
+    // in and gets stripped again before the form submits.
+    function initRangePicker() {
+        const form = document.getElementById('rangePickerForm');
+        if (!form) return;
+
+        const startInput  = document.getElementById('rangeStartInput');
+        const endInput    = document.getElementById('rangeEndInput');
+        const startHidden = document.getElementById('rangeStartHidden');
+        const endHidden   = document.getElementById('rangeEndHidden');
+        const refYear = new Date().getFullYear();
+
+        const toDateValue = monthDay => `${refYear}-${monthDay}`;
+        const toMonthDay = dateValue => dateValue.slice(5); // "yyyy-MM-dd" -> "MM-dd"
+
+        startInput.value = toDateValue(startHidden.value);
+        endInput.value = toDateValue(endHidden.value);
+
+        form.addEventListener('submit', () => {
+            startHidden.value = toMonthDay(startInput.value);
+            endHidden.value = toMonthDay(endInput.value);
+        });
+    }
+
+    // ── This Year ────────────────────────────────────────────────────────
+    function initThisYearCharts() {
+        const currentYear = @currentYear;
+
+        // Daily high vs. normal, year to date
+        const ytdData = @Html.Raw(ytdJson);
+        const deptCtx = document.getElementById('departureChart');
+        if (deptCtx && ytdData.length > 0) {
+            const labels = ytdData.map(d => {
+                const dt = new Date(d.date + 'T00:00:00');
+                return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const step = Math.max(1, Math.floor(ytdData.length / 18));
+            const filteredLabels = labels.map((l, i) => i % step === 0 ? l : '');
+            new Chart(deptCtx, {
+                type: 'bar',
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        label: 'Departure from Normal (°F)',
+                        data: ytdData.map(d => d.departure),
+                        backgroundColor: ytdData.map(d =>
+                            d.departure > 0 ? 'rgba(239,68,68,0.75)' : 'rgba(59,130,246,0.75)'
+                        ),
+                        borderWidth: 0, borderRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const d = ytdData[items[0].dataIndex];
+                                    return new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                },
+                                label: (item) => {
+                                    const d = ytdData[item.dataIndex];
+                                    const lines = [];
+                                    if (d.actual != null) lines.push(`Actual: ${d.actual}°F`);
+                                    if (d.normal != null) lines.push(`Normal: ${d.normal}°F`);
+                                    if (d.departure != null) {
+                                        const sign = d.departure >= 0 ? '+' : '';
+                                        lines.push(`Departure: ${sign}${d.departure.toFixed(1)}°F`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 0 } },
+                        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => (v >= 0 ? '+' : '') + v + '°' } }
+                    }
+                }
+            });
+        }
+
+        // Precipitation accumulation vs. normal, year to date
+        const paccCtx = document.getElementById('precipAccumChart');
+        const precipYtdCum = @Html.Raw(precipYtdCumJson);
+        if (paccCtx && precipYtdCum.length > 0) {
+            const fmtDate = iso => new Date(iso + 'T00:00:00')
+                .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            new Chart(paccCtx, {
+                type: 'line',
+                data: {
+                    labels: precipYtdCum.map(d => fmtDate(d.date)),
+                    datasets: [
+                        {
+                            label: 'Normal to date',
+                            data: precipYtdCum.map(d => d.normal),
+                            borderColor: 'rgba(15,23,42,0.5)',
+                            borderWidth: 1.5,
+                            borderDash: [5, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 1
+                        },
+                        {
+                            label: `${currentYear} actual`,
+                            data: precipYtdCum.map(d => d.actual),
+                            borderColor: 'rgba(37,99,235,0.95)',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            // Shade the gap: blue where the year is ahead, tan where it is behind.
+                            fill: {
+                                target: 0,
+                                above: 'rgba(37,99,235,0.18)',
+                                below: 'rgba(180,130,60,0.20)'
+                            },
+                            order: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 12 } },
+                        tooltip: {
+                            callbacks: {
+                                title: items => {
+                                    const d = precipYtdCum[items[0].dataIndex];
+                                    return new Date(d.date + 'T00:00:00')
+                                        .toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                },
+                                afterBody: items => {
+                                    const d = precipYtdCum[items[0].dataIndex];
+                                    const gap = d.actual - d.normal;
+                                    return `${gap >= 0 ? '+' : ''}${gap.toFixed(2)}" vs. normal to date`;
+                                },
+                                label: item => `${item.dataset.label}: ${item.parsed.y.toFixed(2)}"`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 24 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v + '"' } }
+                    }
+                }
+            });
+        }
+    }
+
+    // ── Heat Charts ──────────────────────────────────────────────────────
+    function initHeatCharts() {
 
     // 90°F Days Per Year
     const hotData = @Html.Raw(hotDaysJson);
@@ -2746,71 +2054,6 @@
     const precipHeavyData   = @Html.Raw(precipHeavyJson);
     const precipAnnualTrend = @Html.Raw(precipAnnualTrendJson);
     const currentYear = @currentYear;
-
-    const paccCtx = document.getElementById('precipAccumChart');
-    const precipYtdCum = @Html.Raw(precipYtdCumJson);
-    if (paccCtx && precipYtdCum.length > 0) {
-        const fmtDate = iso => new Date(iso + 'T00:00:00')
-            .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        new Chart(paccCtx, {
-            type: 'line',
-            data: {
-                labels: precipYtdCum.map(d => fmtDate(d.date)),
-                datasets: [
-                    {
-                        label: 'Normal to date',
-                        data: precipYtdCum.map(d => d.normal),
-                        borderColor: 'rgba(15,23,42,0.5)',
-                        borderWidth: 1.5,
-                        borderDash: [5, 4],
-                        pointRadius: 0,
-                        fill: false,
-                        order: 1
-                    },
-                    {
-                        label: `${currentYear} actual`,
-                        data: precipYtdCum.map(d => d.actual),
-                        borderColor: 'rgba(37,99,235,0.95)',
-                        borderWidth: 2.5,
-                        pointRadius: 0,
-                        // Shade the gap: blue where the year is ahead, tan where it is behind.
-                        fill: {
-                            target: 0,
-                            above: 'rgba(37,99,235,0.18)',
-                            below: 'rgba(180,130,60,0.20)'
-                        },
-                        order: 0
-                    }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 12 } },
-                    tooltip: {
-                        callbacks: {
-                            title: items => {
-                                const d = precipYtdCum[items[0].dataIndex];
-                                return new Date(d.date + 'T00:00:00')
-                                    .toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                            },
-                            afterBody: items => {
-                                const d = precipYtdCum[items[0].dataIndex];
-                                const gap = d.actual - d.normal;
-                                return `${gap >= 0 ? '+' : ''}${gap.toFixed(2)}" vs. normal to date`;
-                            },
-                            label: item => `${item.dataset.label}: ${item.parsed.y.toFixed(2)}"`
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 24 } },
-                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { callback: v => v + '"' } }
-                }
-            }
-        });
-    }
 
     const pmCtx = document.getElementById('precipMonthlyChart');
     if (pmCtx && precipMonthlyData.length > 0) {

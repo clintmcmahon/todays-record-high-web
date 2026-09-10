@@ -813,146 +813,6 @@ public class AcisService : IAcisService
         return results;
     }
 
-    // ── Monthly mean temperatures across the period of record ─────────────
-
-    // A month needs at least this many observed days to be ranked. Ranking a month
-    // built from a handful of days would put partial months at the top of the list.
-    private const int MaxMissingDaysPerMonth = 3;
-
-    public async Task<List<MonthlyMean>> GetMonthlyMeansAsync(string threadexSid)
-    {
-        var cacheKey = $"acis:monthlymeans:{threadexSid}";
-        if (_cache.TryGetValue(cacheKey, out List<MonthlyMean>? cached) && cached is not null)
-            return cached;
-
-        // "mcnt" adds a missing-day count alongside each mean, so partial months
-        // (the in-progress one, and gaps early in the record) can be filtered out.
-        var request = new AcisStnDataRequest
-        {
-            Sid = threadexSid,
-            SDate = "por",
-            EDate = "por",
-            Elems =
-            [
-                new AcisElement
-                {
-                    Name = "avgt",
-                    Interval = new[] { 0, 1 },
-                    Duration = "mly",
-                    Reduce = new AcisReduce { Reduce = "mean", Add = "mcnt" }
-                }
-            ]
-        };
-
-        var response = await PostStnDataAsync(request);
-        if (response?.Data is null)
-            return [];
-
-        var results = new List<MonthlyMean>();
-        foreach (var row in response.Data)
-        {
-            if (row.Count < 2) continue;
-
-            var key = row[0].GetString();
-            if (key is null || key.Length < 7) continue;
-            if (!int.TryParse(key[..4], out var year)) continue;
-            if (!int.TryParse(key.Substring(5, 2), out var month)) continue;
-
-            // With "add": "mcnt" the cell is ["78.85", 0]; without it, a bare value.
-            var cell = row[1];
-            double? avg;
-            int missing = 0;
-            if (cell.ValueKind == JsonValueKind.Array && cell.GetArrayLength() >= 2)
-            {
-                var items = cell.EnumerateArray().ToList();
-                avg = ParseDouble(items[0]);
-                missing = ParseInt(items[1]) ?? 0;
-            }
-            else
-            {
-                avg = ParseDouble(cell);
-            }
-
-            if (avg.HasValue && missing <= MaxMissingDaysPerMonth)
-                results.Add(new MonthlyMean(year, month, avg.Value));
-        }
-
-        _cache.Set(cacheKey, results, TimeSpan.FromHours(12));
-        return results;
-    }
-
-    // ── Monthly precipitation totals across the period of record ──────────
-
-    /// <summary>
-    /// One summed total per calendar month for the whole record. A month with an
-    /// unmeasured day is short by that day's rain, so this is stricter than the
-    /// temperature series: any missing day disqualifies the month from ranking.
-    /// </summary>
-    public async Task<List<MonthlyPrecip>> GetMonthlyPrecipTotalsAsync(string threadexSid)
-    {
-        var cacheKey = $"acis:monthlyprecip:{threadexSid}";
-        if (_cache.TryGetValue(cacheKey, out List<MonthlyPrecip>? cached) && cached is not null)
-            return cached;
-
-        var request = new AcisStnDataRequest
-        {
-            Sid = threadexSid,
-            SDate = "por",
-            EDate = "por",
-            Elems =
-            [
-                new AcisElement
-                {
-                    Name = "pcpn",
-                    Interval = new[] { 0, 1 },
-                    Duration = "mly",
-                    Reduce = new AcisReduce { Reduce = "sum", Add = "mcnt" }
-                }
-            ]
-        };
-
-        var response = await PostStnDataAsync(request);
-        if (response?.Data is null)
-            return [];
-
-        var results = new List<MonthlyPrecip>();
-        foreach (var row in response.Data)
-        {
-            if (row.Count < 2) continue;
-
-            var key = row[0].GetString();
-            if (key is null || key.Length < 7) continue;
-            if (!int.TryParse(key[..4], out var year)) continue;
-            if (!int.TryParse(key.Substring(5, 2), out var month)) continue;
-
-            // With "add": "mcnt" the cell is ["1.71", 0]; without it, a bare value.
-            var cell = row[1];
-            JsonElement valueEl;
-            int missing = 0;
-            if (cell.ValueKind == JsonValueKind.Array && cell.GetArrayLength() >= 2)
-            {
-                var items = cell.EnumerateArray().ToList();
-                valueEl = items[0];
-                missing = ParseInt(items[1]) ?? 0;
-            }
-            else
-            {
-                valueEl = cell;
-            }
-
-            // A month that only ever saw trace amounts reports "T", not a number.
-            var total = valueEl.ValueKind == JsonValueKind.String && valueEl.GetString() == "T"
-                ? 0.0
-                : ParseDouble(valueEl);
-
-            if (total.HasValue && missing == 0)
-                results.Add(new MonthlyPrecip(year, month, Math.Round(total.Value, 2)));
-        }
-
-        _cache.Set(cacheKey, results, TimeSpan.FromHours(12));
-        return results;
-    }
-
     /// <summary>
     /// Least-squares fit of value against year. Returns null for series too short
     /// to say anything — a trend drawn through fifteen points is decoration.
@@ -985,315 +845,6 @@ public class AcisService : IAcisService
 
 
     /// <summary>
-    /// The target month's rainfall against every other year's version of the same
-    /// calendar month: the 1991–2020 average, its rank among those months, and the
-    /// trend across the years.
-    /// </summary>
-    private async Task<MonthPrecipReview?> BuildMonthPrecipAsync(string threadexSid, int year, int month)
-    {
-        var totals = await GetMonthlyPrecipTotalsAsync(threadexSid);
-        if (totals.Count == 0) return null;
-
-        var target = totals.FirstOrDefault(m => m.Year == year && m.Month == month);
-        if (target is null) return null;
-
-        var sameMonth = totals.Where(m => m.Month == month).ToList();
-
-        // Counted from both ends so ties never shift a month's standing.
-        var rankWettest = sameMonth.Count(m => m.Total > target.Total) + 1;
-        var rankDriest  = sameMonth.Count(m => m.Total < target.Total) + 1;
-
-        // Same 1991–2020 window used for the temperature normal, derived from the
-        // station's own totals rather than a second API call.
-        var baseline = sameMonth.Where(m => m.Year is >= 1991 and <= 2020).ToList();
-        double? normal = baseline.Count >= 15
-            ? Math.Round(baseline.Average(m => m.Total), 2)
-            : null;
-
-        var history = sameMonth.OrderBy(m => m.Year).ToList();
-        var trend = ComputeTrend(history.Select(m => (m.Year, m.Total)).ToList());
-
-        return new MonthPrecipReview(
-            Year:                  year,
-            Month:                 month,
-            Total:                 target.Total,
-            NormalTotal:           normal,
-            RankWettestSameMonth:  rankWettest,
-            RankDriestSameMonth:   rankDriest,
-            TotalSameMonths:       sameMonth.Count,
-            WettestSameMonthEver:  sameMonth.OrderByDescending(m => m.Total).FirstOrDefault(),
-            DriestSameMonthEver:   sameMonth.OrderBy(m => m.Total).FirstOrDefault(),
-            TopSameMonths:         sameMonth.OrderByDescending(m => m.Total).Take(10).ToList(),
-            DriestSameMonths:      sameMonth.OrderBy(m => m.Total).ThenByDescending(m => m.Year).Take(10).ToList(),
-            SameMonthHistory:      history,
-            SameMonthTrend:        trend);
-    }
-
-    // ── Month in Review ───────────────────────────────────────────────────
-
-    public async Task<MonthInReview?> GetMonthInReviewAsync(
-        string threadexSid, IReadOnlyList<Station> peerStations,
-        int? requestedYear = null, int? requestedMonth = null)
-    {
-        var monthlyMeans = await GetMonthlyMeansAsync(threadexSid);
-        if (monthlyMeans.Count == 0)
-            return null;
-
-        // The in-progress month is already excluded by the missing-day filter, so the
-        // reviewable set is simply every entry starting before the current month.
-        var now = DateTime.Now;
-        var currentMonthStart = new DateTime(now.Year, now.Month, 1);
-        var reviewable = monthlyMeans
-            .Where(m => new DateTime(m.Year, m.Month, 1) < currentMonthStart)
-            .ToList();
-
-        var latest = reviewable
-            .OrderByDescending(m => m.Year).ThenByDescending(m => m.Month)
-            .FirstOrDefault();
-
-        if (latest is null)
-            return null;
-
-        // A reader can ask for any month in the record; anything unavailable falls
-        // back to the newest complete month, which the caller can detect by
-        // comparing what it asked for against what came back.
-        var target = requestedYear.HasValue && requestedMonth.HasValue
-            ? reviewable.FirstOrDefault(m => m.Year == requestedYear && m.Month == requestedMonth) ?? latest
-            : latest;
-
-        var cacheKey = $"acis:monthreview:{threadexSid}:{target.Year}-{target.Month:00}";
-        if (_cache.TryGetValue(cacheKey, out MonthInReview? cachedReview) && cachedReview is not null)
-            return cachedReview;
-
-        // ── Rankings ──────────────────────────────────────────────────────
-        var warmerAnywhere = monthlyMeans.Count(m => m.AvgTemp > target.AvgTemp);
-        var rankAllMonths  = warmerAnywhere + 1;
-
-        var sameMonth = monthlyMeans.Where(m => m.Month == target.Month).ToList();
-        var rankSameMonth = sameMonth.Count(m => m.AvgTemp > target.AvgTemp) + 1;
-
-        var topMonths = monthlyMeans
-            .OrderByDescending(m => m.AvgTemp).Take(10).ToList();
-        var topSameMonths = sameMonth
-            .OrderByDescending(m => m.AvgTemp).Take(10).ToList();
-        var sameMonthHistory = sameMonth
-            .OrderBy(m => m.Year).ToList();
-
-        // 1991–2020 average for this calendar month, matching the normals period
-        // used elsewhere on the page.
-        // Kept at full precision — rounding happens at display time so rankings and
-        // departures are computed from the underlying values.
-        var baseline = sameMonth.Where(m => m.Year is >= 1991 and <= 2020).ToList();
-        double? normalAvg = baseline.Count >= 15
-            ? baseline.Average(m => m.AvgTemp)
-            : null;
-
-        // ── Daily-series stats: 90° streaks and the year's peak ───────────
-        var daily = await GetDailyMaxtAsync(threadexSid);
-
-        const int hotThreshold = 90;
-
-        var monthStart = new DateTime(target.Year, target.Month, 1);
-        var monthEnd   = monthStart.AddMonths(1).AddDays(-1);
-
-        // Streaks are scoped to the calendar month and compared against the same month
-        // in other years. A run spilling in from May is not a July statistic, and an
-        // unfinished run would be measured against completed ones.
-        var streakByYear = daily
-            .Where(d => d.Date.Month == target.Month)
-            .GroupBy(d => d.Date.Year)
-            .Select(g => BuildStreaks(g.ToList(), hotThreshold)
-                .OrderByDescending(s => s.Days).ThenByDescending(s => s.PeakTemp)
-                .FirstOrDefault())
-            .Where(s => s is not null)
-            .Select(s => s!)
-            .ToList();
-
-        var longestInMonth = streakByYear.FirstOrDefault(s => s.Year == target.Year);
-
-        var longestEver = streakByYear
-            .OrderByDescending(s => s.Days).ThenByDescending(s => s.PeakTemp)
-            .FirstOrDefault();
-
-        // "Longest since YYYY" — the most recent earlier year whose run in this same
-        // month was longer, which is what makes a streak newsworthy. Ties are tracked
-        // separately so a matched streak is never reported as an outright record.
-        int? lastYearWithLongerStreak = null;
-        int? lastYearTiedStreak = null;
-        if (longestInMonth is not null)
-        {
-            var prior = streakByYear.Where(s => s.Year < target.Year).ToList();
-
-            var longer = prior.Where(s => s.Days > longestInMonth.Days).ToList();
-            if (longer.Count > 0) lastYearWithLongerStreak = longer.Max(s => s.Year);
-
-            var tied = prior.Where(s => s.Days == longestInMonth.Days).ToList();
-            if (tied.Count > 0) lastYearTiedStreak = tied.Max(s => s.Year);
-        }
-
-        var hotDaysInMonth = daily.Count(d =>
-            d.Date >= monthStart && d.Date <= monthEnd &&
-            d.MaxT.HasValue && d.MaxT.Value >= hotThreshold);
-
-        // 90°F is only a meaningful yardstick where it actually happens, and a single
-        // hot day is not a streak worth a callout.
-        var totalHotDaysEver = daily.Count(d => d.MaxT.HasValue && d.MaxT.Value >= hotThreshold);
-        var showStreak = totalHotDaysEver >= 20 && longestInMonth is { Days: >= 2 };
-
-        // ── Year's peak high and the milestone it cleared ─────────────────
-        var thisYear = daily.Where(d => d.Date.Year == target.Year && d.MaxT.HasValue).ToList();
-        int? yearPeak = null;
-        string? yearPeakDate = null;
-        if (thisYear.Count > 0)
-        {
-            var peakDay = thisYear.OrderByDescending(d => d.MaxT!.Value).ThenBy(d => d.Date).First();
-            yearPeak = (int)Math.Round(peakDay.MaxT!.Value);
-            yearPeakDate = peakDay.Date.ToString("yyyy-MM-dd");
-        }
-
-        int? milestone = yearPeak switch
-        {
-            >= 100 => 100,
-            >= 95  => 95,
-            >= 90  => 90,
-            _      => null
-        };
-
-        int? lastYearAtMilestone = null;
-        if (milestone.HasValue)
-        {
-            var priorYears = daily
-                .Where(d => d.Date.Year < target.Year
-                         && d.MaxT.HasValue && d.MaxT.Value >= milestone.Value)
-                .Select(d => d.Date.Year)
-                .ToList();
-            if (priorYears.Count > 0)
-                lastYearAtMilestone = priorYears.Max();
-        }
-
-        // ── Regional peers ────────────────────────────────────────────────
-        var peers = await GetPeerRanksAsync(peerStations, target.Year, target.Month);
-
-        // ── Precipitation and the temperature trend for this calendar month ──
-        var precipReview = await BuildMonthPrecipAsync(threadexSid, target.Year, target.Month);
-
-        var tempTrend = ComputeTrend(sameMonthHistory.Select(m => (m.Year, m.AvgTemp)).ToList());
-
-        // Drives the month/year picker: only combinations the station actually has.
-        var availableYears = reviewable
-            .GroupBy(m => m.Month)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(m => m.Year).OrderByDescending(y => y).ToList());
-
-        var review = new MonthInReview(
-            Year:                     target.Year,
-            Month:                    target.Month,
-            AvgTemp:                  target.AvgTemp,
-            NormalAvgTemp:            normalAvg,
-            RankAllMonths:            rankAllMonths,
-            TotalMonths:              monthlyMeans.Count,
-            RankSameMonth:            rankSameMonth,
-            TotalSameMonths:          sameMonth.Count,
-            WarmestMonthEver:         topMonths.FirstOrDefault(),
-            WarmestSameMonthEver:     topSameMonths.FirstOrDefault(),
-            TopMonths:                topMonths,
-            TopSameMonths:            topSameMonths,
-            SameMonthHistory:         sameMonthHistory,
-            LongestStreakInMonth:     longestInMonth,
-            LongestStreakEver:        longestEver,
-            LastYearWithLongerStreak: lastYearWithLongerStreak,
-            LastYearTiedStreak:       lastYearTiedStreak,
-            HotDayThreshold:          hotThreshold,
-            HotDaysInMonth:           hotDaysInMonth,
-            ShowStreak:               showStreak,
-            YearPeakHigh:             yearPeak,
-            YearPeakHighDate:         yearPeakDate,
-            PeakMilestone:            milestone,
-            LastYearAtMilestone:      lastYearAtMilestone,
-            Peers:                    peers,
-            SameMonthTrend:           tempTrend,
-            Precip:                   precipReview,
-            IsLatest:                 target.Year == latest.Year && target.Month == latest.Month,
-            AvailableYearsByMonth:    availableYears);
-
-        // Only changes once a month, but keep it short enough that a station whose
-        // data lands late still refreshes the same day.
-        _cache.Set(cacheKey, review, TimeSpan.FromHours(12));
-        return review;
-    }
-
-    private async Task<List<PeerMonthRank>> GetPeerRanksAsync(
-        IReadOnlyList<Station> peerStations, int year, int month)
-    {
-        if (peerStations.Count == 0)
-            return [];
-
-        var tasks = peerStations
-            .Where(s => s.HasAcisData)
-            .Select(async station =>
-            {
-                var means = await GetMonthlyMeansAsync(station.ThreadexSid!);
-                var entry = means.FirstOrDefault(m => m.Year == year && m.Month == month);
-                if (entry is null) return null;
-
-                var sameMonth = means.Where(m => m.Month == month).ToList();
-                var rank = sameMonth.Count(m => m.AvgTemp > entry.AvgTemp) + 1;
-
-                return new PeerMonthRank(
-                    station.City, station.State, station.Slug,
-                    entry.AvgTemp, rank, sameMonth.Count);
-            })
-            .ToList();
-
-        var results = await Task.WhenAll(tasks);
-        return results.Where(r => r is not null).Select(r => r!).ToList();
-    }
-
-    /// <summary>
-    /// Runs of consecutive calendar days at or above <paramref name="thresholdF"/>.
-    /// A missing observation or a gap in the record ends the run.
-    /// </summary>
-    private static List<HotStreak> BuildStreaks(
-        List<(DateTime Date, double? MaxT)> daily, int thresholdF)
-    {
-        var streaks = new List<HotStreak>();
-        var run = new List<(DateTime Date, double MaxT)>();
-
-        void Flush()
-        {
-            if (run.Count == 0) return;
-            streaks.Add(new HotStreak(
-                Days:      run.Count,
-                StartDate: run[0].Date.ToString("yyyy-MM-dd"),
-                EndDate:   run[^1].Date.ToString("yyyy-MM-dd"),
-                Year:      run[0].Date.Year,
-                PeakTemp:  (int)Math.Round(run.Max(r => r.MaxT))));
-            run.Clear();
-        }
-
-        foreach (var (date, maxT) in daily)
-        {
-            var isHot = maxT.HasValue && maxT.Value >= thresholdF;
-            var isConsecutive = run.Count == 0 || run[^1].Date.AddDays(1) == date;
-
-            if (isHot && isConsecutive)
-            {
-                run.Add((date, maxT!.Value));
-            }
-            else
-            {
-                Flush();
-                if (isHot) run.Add((date, maxT!.Value));
-            }
-        }
-        Flush();
-
-        return streaks;
-    }
-
-    /// <summary>Daily maximum temperatures for the full period of record through yesterday.</summary>
-    /// <summary>
     /// Daily highs for the period of record, projected from the combined daily series
     /// so a station page pulls one multi-megabyte response instead of two.
     /// </summary>
@@ -1312,16 +863,14 @@ public class AcisService : IAcisService
         return results;
     }
 
-    // ── Fall in Review (meteorological September–November) ────────────────
-
-    // Sep 30 + Oct 31 + Nov 30. Fixed every year, leap years included, so a
-    // day-weighted mean of the three monthly means is the exact seasonal mean.
-    private const int FallDayCount = 91;
+    // ── Shared daily observations ───────────────────────────────────────────
 
     /// <summary>
-    /// Daily maximum, minimum and snowfall for the whole period of record. One
-    /// request covers every dated marker on the fall tab, so the season math never
-    /// goes back to the network per threshold.
+    /// Daily maximum, minimum, snowfall and precipitation for the whole period of
+    /// record. One request backs every feature that needs day-level data — Records'
+    /// first/last-date markers and growing season, Heat's hot-day counts, and Custom
+    /// Range's arbitrary-window aggregation — so none of them goes back to the network
+    /// on its own.
     /// </summary>
     private async Task<List<DailyObs>> GetDailyObsAsync(string threadexSid)
     {
@@ -1339,7 +888,8 @@ public class AcisService : IAcisService
             [
                 new AcisElement { Name = "maxt" },
                 new AcisElement { Name = "mint" },
-                new AcisElement { Name = "snow" }
+                new AcisElement { Name = "snow" },
+                new AcisElement { Name = "pcpn" }
             ]
         };
 
@@ -1350,22 +900,26 @@ public class AcisService : IAcisService
         var results = new List<DailyObs>(response.Data.Count);
         foreach (var row in response.Data)
         {
-            if (row.Count < 4) continue;
+            if (row.Count < 5) continue;
             if (!DateTime.TryParse(row[0].GetString(), out var date)) continue;
+
+            // Trace snow/rain is a real event but not a measurable one; it counts as zero.
+            static double? ParseOrTrace(JsonElement el) =>
+                el.GetString() == "T" ? 0.0 : ParseDouble(el);
 
             results.Add(new DailyObs(
                 date,
                 ParseDouble(row[1]),
                 ParseDouble(row[2]),
-                // Trace snow is a real event but not a measurable one; it counts as zero.
-                row[3].GetString() == "T" ? 0.0 : ParseDouble(row[3])));
+                ParseOrTrace(row[3]),
+                ParseOrTrace(row[4])));
         }
 
         _cache.Set(cacheKey, results, TimeSpan.FromHours(3));
         return results;
     }
 
-    private record DailyObs(DateTime Date, double? MaxT, double? MinT, double? Snow);
+    private record DailyObs(DateTime Date, double? MaxT, double? MinT, double? Snow, double? Precip);
 
     /// <summary>
     /// A marker needs to have happened in this many years before it is worth showing.
@@ -1379,107 +933,141 @@ public class AcisService : IAcisService
     /// </summary>
     private const double MinWindowCoverage = 0.8;
 
-    public async Task<FallReview?> GetFallReviewAsync(string threadexSid, int? requestedYear = null)
+    // ── Custom Range Review ─────────────────────────────────────────────────
+
+    private static bool TryParseMonthDay(string monthDay, out int month, out int day)
     {
-        var monthlyMeans = await GetMonthlyMeansAsync(threadexSid);
-        if (monthlyMeans.Count == 0)
+        month = 0; day = 0;
+        var parts = monthDay.Split('-');
+        if (parts.Length != 2) return false;
+        if (!int.TryParse(parts[0], out month) || !int.TryParse(parts[1], out day)) return false;
+        if (month is < 1 or > 12) return false;
+        try { _ = new DateTime(2001, month, day); } catch (ArgumentOutOfRangeException) { return false; }
+        return true;
+    }
+
+    /// <summary>
+    /// Temp and precip for any start/end date-of-year, evaluated across every year on
+    /// record: a rank, a 1991–2020 normal, and a trend for exactly the window asked
+    /// for, whether that's a single month, a season, or an arbitrary stretch of days.
+    /// v1 supports only windows that stay within a single calendar year (no Dec 20–Jan 5
+    /// wraparound yet).
+    /// </summary>
+    public async Task<CustomRangeReview?> GetCustomRangeReviewAsync(
+        string threadexSid, string startMonthDay, string endMonthDay, int? requestedYear = null)
+    {
+        if (!TryParseMonthDay(startMonthDay, out var startMonth, out var startDay) ||
+            !TryParseMonthDay(endMonthDay, out var endMonth, out var endDay))
+            return null;
+        if ((startMonth, startDay).CompareTo((endMonth, endDay)) > 0)
             return null;
 
-        // Day-weighted mean of September, October and November. A year missing any of
-        // the three has no comparable seasonal value and sits out of the record.
-        var meanByYearMonth = monthlyMeans
-            .Where(m => m.Month is 9 or 10 or 11)
-            .ToDictionary(m => (m.Year, m.Month), m => m.AvgTemp);
+        var daily = await GetDailyObsAsync(threadexSid);
+        if (daily.Count == 0) return null;
 
-        var tempHistory = meanByYearMonth.Keys.Select(k => k.Year).Distinct().OrderBy(y => y)
-            .Where(y => meanByYearMonth.ContainsKey((y, 9))
-                     && meanByYearMonth.ContainsKey((y, 10))
-                     && meanByYearMonth.ContainsKey((y, 11)))
-            .Select(y => new FallSeason(y,
-                (meanByYearMonth[(y, 9)] * 30 + meanByYearMonth[(y, 10)] * 31 + meanByYearMonth[(y, 11)] * 30)
-                    / FallDayCount,
-                null))
-            .ToList();
+        var byYear = daily.GroupBy(d => d.Date.Year).ToDictionary(g => g.Key, g => g.ToList());
+        var dayCount = (new DateTime(2001, endMonth, endDay) - new DateTime(2001, startMonth, startDay)).Days + 1;
+
+        // Temperature averages daily (maxt+mint)/2 over the window and tolerates the same
+        // ~20% missing-day slack as other window searches in this file; precipitation
+        // requires every day present, same "an unreported day is unreported rain" rule
+        // used everywhere else on this site.
+        (double? Temp, double? Precip) Aggregate(int year)
+        {
+            var start = new DateTime(year, startMonth, startDay);
+            var end   = new DateTime(year, endMonth, endDay);
+            var inRange = byYear.TryGetValue(year, out var days)
+                ? days.Where(d => d.Date >= start && d.Date <= end).ToList()
+                : [];
+
+            double tempSum = 0; var tempCount = 0;
+            double precipSum = 0; var precipMissing = dayCount - inRange.Count;
+            foreach (var d in inRange)
+            {
+                if (d.MaxT.HasValue && d.MinT.HasValue) { tempSum += (d.MaxT.Value + d.MinT.Value) / 2.0; tempCount++; }
+                if (d.Precip.HasValue) precipSum += d.Precip.Value; else precipMissing++;
+            }
+
+            var tempMissing = dayCount - tempCount;
+            return (
+                tempCount > 0 && tempMissing <= dayCount * (1 - MinWindowCoverage) ? tempSum / tempCount : null,
+                precipMissing == 0 ? Math.Round(precipSum, 2) : null);
+        }
+
+        var tempHistory = new List<RangeSeason>();
+        var precipHistory = new List<RangeSeason>();
+        foreach (var year in byYear.Keys.OrderBy(y => y))
+        {
+            var (temp, precip) = Aggregate(year);
+            if (temp.HasValue) tempHistory.Add(new RangeSeason(year, temp, null));
+            if (precip.HasValue) precipHistory.Add(new RangeSeason(year, null, precip));
+        }
 
         if (tempHistory.Count == 0)
             return null;
 
-        var precipTotals = await GetMonthlyPrecipTotalsAsync(threadexSid);
-        var precipByYearMonth = precipTotals
-            .Where(m => m.Month is 9 or 10 or 11)
-            .ToDictionary(m => (m.Year, m.Month), m => m.Total);
-
-        var precipHistory = precipByYearMonth.Keys.Select(k => k.Year).Distinct().OrderBy(y => y)
-            .Where(y => precipByYearMonth.ContainsKey((y, 9))
-                     && precipByYearMonth.ContainsKey((y, 10))
-                     && precipByYearMonth.ContainsKey((y, 11)))
-            .Select(y => new FallSeason(y, null, Math.Round(
-                precipByYearMonth[(y, 9)] + precipByYearMonth[(y, 10)] + precipByYearMonth[(y, 11)], 2)))
-            .ToList();
-
-        // Which fall to review. During the season itself the reader wants the one
-        // happening now, even though it cannot be ranked yet.
+        // Which year to review: the one happening now if the window has already started
+        // this year and no complete year is newer — show it even though it can't be
+        // ranked yet, rather than silently falling back to last year's window.
         var now = DateTime.Now;
         var latestComplete = tempHistory[^1].Year;
-        var inFallOrLater = now.Month >= 9;
-        var defaultYear = inFallOrLater && now.Year > latestComplete ? now.Year : latestComplete;
+        var windowHasStarted = now >= new DateTime(now.Year, startMonth, startDay);
+        var defaultYear = windowHasStarted && now.Year > latestComplete ? now.Year : latestComplete;
 
-        var available = tempHistory.Select(f => f.Year).ToList();
+        var available = tempHistory.Select(t => t.Year).ToList();
         if (defaultYear > latestComplete) available.Add(defaultYear);
 
         var target = requestedYear is { } ry && available.Contains(ry) ? ry : defaultYear;
         var inProgress = target > latestComplete;
 
-        var cacheKey = $"acis:fallreview:{threadexSid}:{target}";
-        if (_cache.TryGetValue(cacheKey, out FallReview? cachedReview) && cachedReview is not null)
+        var cacheKey = $"acis:customrange:{threadexSid}:{startMonthDay}:{endMonthDay}:{target}";
+        if (_cache.TryGetValue(cacheKey, out CustomRangeReview? cachedReview) && cachedReview is not null)
             return cachedReview;
 
-        var tempTrend   = ComputeTrend(tempHistory.Select(f => (f.Year, f.AvgTemp!.Value)).ToList());
-        var precipTrend = ComputeTrend(precipHistory.Select(f => (f.Year, f.Precip!.Value)).ToList());
+        var tempTrend   = ComputeTrend(tempHistory.Select(t => (t.Year, t.AvgTemp!.Value)).ToList());
+        var precipTrend = ComputeTrend(precipHistory.Select(t => (t.Year, t.Precip!.Value)).ToList());
 
-        var tempBaseline = tempHistory.Where(f => f.Year is >= 1991 and <= 2020).ToList();
-        double? tempNormal = tempBaseline.Count >= 15 ? tempBaseline.Average(f => f.AvgTemp!.Value) : null;
+        var tempBaseline = tempHistory.Where(t => t.Year is >= 1991 and <= 2020).ToList();
+        double? tempNormal = tempBaseline.Count >= 15 ? tempBaseline.Average(t => t.AvgTemp!.Value) : null;
 
-        var precipBaseline = precipHistory.Where(f => f.Year is >= 1991 and <= 2020).ToList();
+        var precipBaseline = precipHistory.Where(t => t.Year is >= 1991 and <= 2020).ToList();
         double? precipNormal = precipBaseline.Count >= 15
-            ? Math.Round(precipBaseline.Average(f => f.Precip!.Value), 2) : null;
+            ? Math.Round(precipBaseline.Average(t => t.Precip!.Value), 2) : null;
 
-        FallTempSummary? tempSummary = null;
-        var targetTemp = tempHistory.FirstOrDefault(f => f.Year == target);
+        RangeTempSummary? tempSummary = null;
+        var targetTemp = tempHistory.FirstOrDefault(t => t.Year == target);
         if (targetTemp is not null)
         {
             var v = targetTemp.AvgTemp!.Value;
-            tempSummary = new FallTempSummary(
+            tempSummary = new RangeTempSummary(
                 AvgTemp:      v,
                 Normal:       tempNormal,
-                RankWarmest:  tempHistory.Count(f => f.AvgTemp > v) + 1,
-                RankCoolest:  tempHistory.Count(f => f.AvgTemp < v) + 1,
+                RankWarmest:  tempHistory.Count(t => t.AvgTemp > v) + 1,
+                RankCoolest:  tempHistory.Count(t => t.AvgTemp < v) + 1,
                 TotalSeasons: tempHistory.Count,
-                Warmest:      tempHistory.OrderByDescending(f => f.AvgTemp).Take(10).ToList(),
-                Coldest:      tempHistory.OrderBy(f => f.AvgTemp).Take(10).ToList());
+                Warmest:      tempHistory.OrderByDescending(t => t.AvgTemp).Take(10).ToList(),
+                Coldest:      tempHistory.OrderBy(t => t.AvgTemp).Take(10).ToList());
         }
 
-        FallPrecipSummary? precipSummary = null;
-        var targetPrecip = precipHistory.FirstOrDefault(f => f.Year == target);
+        RangePrecipSummary? precipSummary = null;
+        var targetPrecip = precipHistory.FirstOrDefault(t => t.Year == target);
         if (targetPrecip is not null)
         {
             var v = targetPrecip.Precip!.Value;
-            precipSummary = new FallPrecipSummary(
+            precipSummary = new RangePrecipSummary(
                 Total:        v,
                 Normal:       precipNormal,
-                RankWettest:  precipHistory.Count(f => f.Precip > v) + 1,
-                RankDriest:   precipHistory.Count(f => f.Precip < v) + 1,
+                RankWettest:  precipHistory.Count(t => t.Precip > v) + 1,
+                RankDriest:   precipHistory.Count(t => t.Precip < v) + 1,
                 TotalSeasons: precipHistory.Count,
-                Wettest:      precipHistory.OrderByDescending(f => f.Precip).Take(10).ToList(),
-                Driest:       precipHistory.OrderBy(f => f.Precip).ThenByDescending(f => f.Year).Take(10).ToList());
+                Wettest:      precipHistory.OrderByDescending(t => t.Precip).Take(10).ToList(),
+                Driest:       precipHistory.OrderBy(t => t.Precip).ThenByDescending(t => t.Year).Take(10).ToList());
         }
 
-        var daily = await GetDailyObsAsync(threadexSid);
-        var markers = BuildSeasonMarkers(daily, target);
-        var growing = BuildGrowingSeason(daily, target);
-
-        var review = new FallReview(
+        var review = new CustomRangeReview(
             Year:           target,
+            StartMonthDay:  startMonthDay,
+            EndMonthDay:    endMonthDay,
             IsInProgress:   inProgress,
             Temp:           tempSummary,
             Precip:         precipSummary,
@@ -1489,12 +1077,10 @@ public class AcisService : IAcisService
             PrecipHistory:  precipHistory,
             PrecipTrend:    precipTrend,
             PrecipNormal:   precipNormal,
-            Markers:        markers,
-            Growing:        growing,
+            DayCount:       dayCount,
             IsLatest:       target == defaultYear,
             AvailableYears: available.OrderByDescending(y => y).ToList());
 
-        // Short while the season is running, longer once it is settled history.
         _cache.Set(cacheKey, review, inProgress ? TimeSpan.FromHours(3) : TimeSpan.FromHours(12));
         return review;
     }

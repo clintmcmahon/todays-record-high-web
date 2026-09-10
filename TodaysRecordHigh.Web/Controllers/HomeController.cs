@@ -30,12 +30,15 @@ public class HomeController : Controller
 
     private readonly IStationService _stationService;
     private readonly IAcisService _acisService;
+    private readonly IRecordsWatchService _watch;
     private readonly IConfiguration _config;
 
-    public HomeController(IStationService stationService, IAcisService acisService, IConfiguration config)
+    public HomeController(IStationService stationService, IAcisService acisService,
+        IRecordsWatchService watch, IConfiguration config)
     {
         _stationService = stationService;
         _acisService = acisService;
+        _watch = watch;
         _config = config;
     }
 
@@ -81,7 +84,10 @@ public class HomeController : Controller
             MapboxToken             = _config["MapboxToken"] ?? string.Empty,
             TodayLabel              = today.ToString("MMMM d"),
             FeaturedRecords         = featuredRecords,
-            FeaturedSlugsQueryString = string.Join(",", featuredStations.Select(s => s.Slug))
+            FeaturedSlugsQueryString = string.Join(",", featuredStations.Select(s => s.Slug)),
+            // Reads the pre-computed background scan — see RecordsWatchService — never
+            // triggers a scan itself, so this is always instant.
+            WatchNotable            = _watch.GetLatest()?.Notable.Take(8).ToList() ?? []
         };
 
         ViewData["MetaDescription"] = $"Today is {vm.TodayLabel}. See today's all-time record high temperatures for major U.S. cities — Boston, New York, Chicago, Miami, Denver, Phoenix, Seattle, and more. Climate data since the 1800s via NOAA Threadex.";

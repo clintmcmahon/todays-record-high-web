@@ -34,6 +34,16 @@ public class SitemapController : Controller
   </url>
 """);
 
+        // Records Watch — refreshes every 30 minutes, so a daily crawl freshness signal
+        sb.AppendLine($"""
+  <url>
+    <loc>{baseUrl}/records-today</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+""");
+
         // All Stations list
         sb.AppendLine($"""
   <url>
