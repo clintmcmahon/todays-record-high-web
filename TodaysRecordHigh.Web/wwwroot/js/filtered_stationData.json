@@ -2390,16 +2390,6 @@
     "threadexSid": "MCKthr"
   },
   {
-    "name": "Ord",
-    "city": "Ord",
-    "state": "NE",
-    "stateName": "Nebraska",
-    "id": 94462,
-    "latitude": 41.6033379,
-    "longitude": -98.9262134,
-    "threadexSid": "ORDN1thr"
-  },
-  {
     "name": "SOUTH FORK STATE RECREATION AREA",
     "city": "SOUTH FORK STATE RECREATION AREA",
     "state": "NV",
@@ -4348,5 +4338,16 @@
     "latitude": 44.7947537,
     "longitude": -106.8222688,
     "threadexSid": "SHRthr"
+  },
+  {
+    "name": "Dana Point",
+    "city": "Dana Point",
+    "state": "CA",
+    "stateName": "California",
+    "id": 900001,
+    "latitude": 33.4666,
+    "longitude": -117.6981,
+    "threadexSid": "USC00046175",
+    "sourceStationName": "Newport Beach Harbor, CA (14 mi away)"
   }
 ]

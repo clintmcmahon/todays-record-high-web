@@ -28,6 +28,11 @@ public class Station
     [JsonPropertyName("threadexSid")]
     public string? ThreadexSid { get; set; }
 
+    // Set only when this station has no weather station of its own and borrows
+    // data from a nearby one — surfaced as a disclaimer on the station page.
+    [JsonPropertyName("sourceStationName")]
+    public string? SourceStationName { get; set; }
+
     [JsonIgnore]
     public bool HasAcisData => !string.IsNullOrEmpty(ThreadexSid);
 

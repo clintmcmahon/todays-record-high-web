@@ -189,6 +189,14 @@
         </p>
     </div>
 
+    @if (!string.IsNullOrEmpty(Model.Station.SourceStationName))
+    {
+        <div class="alert alert-warning py-2 px-3 small mb-3" role="alert">
+            ℹ️ @Model.Station.City has no weather station of its own. Data shown is from the nearest
+            active station with a long record: <strong>@Model.Station.SourceStationName</strong>.
+        </div>
+    }
+
     <!-- Current conditions banner -->
     @if (Model.Current is not null)
     {
