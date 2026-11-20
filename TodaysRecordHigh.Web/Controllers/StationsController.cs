@@ -55,7 +55,7 @@ public class StationsController : Controller
             return RedirectPermanent($"/stations/{slug}?rangeStart=09-01&rangeEnd=11-30&rangeYear={fall}");
         }
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var monthDay = today.ToString("MM-dd");
 
         var vm = new StationDetailViewModel

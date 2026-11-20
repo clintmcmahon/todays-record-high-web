@@ -18,14 +18,19 @@ public class RecordsWatchService : BackgroundService, IRecordsWatchService
     private readonly ICurrentWeatherService _weather;
     private readonly ILogger<RecordsWatchService> _logger;
 
-    // A full scan touches two free third-party APIs ~1,200 times; refresh generously
-    // rather than aggressively; the data itself (today's record + normal) barely moves
-    // within a day, and weather observations update on their own ~20 min cadence.
-    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(30);
+    // Each scan makes ~415 Open-Meteo calls, and Open-Meteo's free tier allows 10,000 a
+    // day shared with every page on the site. The old 30-minute, around-the-clock cadence
+    // burned ~20,000/day and knocked out current conditions site-wide once the quota ran
+    // dry. Hourly scans inside the window below cost ~6,200/day and leave the rest for
+    // visitors. Record highs happen in the afternoon, so overnight scans add nothing.
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromHours(1);
+    private const int ActiveStartHourCentral = 9;   // 9 AM CT = 10 AM ET
+    private const int ActiveEndHourCentral   = 23;  // last scan 11 PM CT = 9 PM PT
 
-    // Bounds how many stations are in flight at once — a courtesy to two free APIs, not
-    // a response to any documented rate limit (none is published for either one).
-    private const int MaxConcurrency = 24;
+    // Bounds how many stations are in flight at once. Open-Meteo answers 429 "Too many
+    // concurrent requests" at 24, and that cap is shared with live page traffic, so keep
+    // the background scan small. A full scan takes under a minute at this setting.
+    private const int MaxConcurrency = 4;
 
     private volatile RecordWatchSnapshot? _latest;
 
@@ -60,7 +65,7 @@ public class RecordsWatchService : BackgroundService, IRecordsWatchService
 
             try
             {
-                await Task.Delay(RefreshInterval, stoppingToken);
+                await Task.Delay(DelayUntilNextScan(DateTime.UtcNow), stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -69,9 +74,27 @@ public class RecordsWatchService : BackgroundService, IRecordsWatchService
         }
     }
 
+    /// <summary>
+    /// One interval when the next scan still lands inside today's active window;
+    /// otherwise sleep until the window opens. Always scans once at startup (the caller
+    /// runs the first scan before asking) so a deploy never leaves the page empty.
+    /// </summary>
+    public static TimeSpan DelayUntilNextScan(DateTime utcNow)
+    {
+        var localNow = SiteClock.ToCentral(utcNow);
+        var next = localNow + RefreshInterval;
+        if (next.Hour >= ActiveStartHourCentral && next.Hour <= ActiveEndHourCentral && next.Date == localNow.Date)
+            return RefreshInterval;
+
+        var opens = localNow.Date.AddHours(ActiveStartHourCentral);
+        if (opens <= localNow) opens = opens.AddDays(1);
+        var opensUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(opens, DateTimeKind.Unspecified), SiteClock.Central);
+        return opensUtc - utcNow;
+    }
+
     private async Task<RecordWatchSnapshot> ScanAsync(CancellationToken ct)
     {
-        var monthDay = DateTime.Now.ToString("MM-dd");
+        var monthDay = SiteClock.Now.ToString("MM-dd");
         var stations = _stations.GetAll().Where(s => s.HasAcisData).ToList();
 
         using var semaphore = new SemaphoreSlim(MaxConcurrency);

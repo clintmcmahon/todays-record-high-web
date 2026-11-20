@@ -16,7 +16,7 @@ public class RecordsWatchController : Controller
     public IActionResult Today()
     {
         var snapshot = _watch.GetLatest();
-        var today = DateTime.Now.ToString("MMMM d");
+        var today = snapshot?.DateLabel ?? SiteClock.Now.ToString("MMMM d");
 
         ViewData["Title"] = $"Cities Near a Record High Today, {today} | Today's Record High";
         ViewData["MetaDescription"] = snapshot is { Notable.Count: > 0 }

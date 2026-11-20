@@ -72,9 +72,9 @@
     var rangePrecipTrendJson = TrendJson(cr2?.PrecipTrend);
     var rangeYearValue = cr2?.Year ?? 0;
 
-    var currentYear = DateTime.Now.Year;
-    var currentMonth = DateTime.Now.Month;
-    var monthName = DateTime.Now.ToString("MMMM");
+    var currentYear = SiteClock.Now.Year;
+    var currentMonth = SiteClock.Now.Month;
+    var monthName = SiteClock.Now.ToString("MMMM");
 
     var hasHeatData = Model.HeatWaves != null || (Model.WarmNights != null && Model.WarmNights.WarmNightsPerYear.Count > 0) || Model.HotDaysPerYear.Count > 5 || Model.YtdDepartures.Count > 10;
 }
@@ -631,7 +631,7 @@
         @{
             var hw = Model.HeatWaves;
             var wn = Model.WarmNights;
-            var isSummer = DateTime.Now.Month is >= 6 and <= 8;
+            var isSummer = SiteClock.Now.Month is >= 6 and <= 8;
         }
 
         <!-- Current streak widget -->
@@ -1161,7 +1161,7 @@
                 <div class="d-flex flex-wrap gap-2 mb-1">
                     <span class="text-muted small me-1 align-self-center">Quick picks:</span>
                     @{
-                        var quickToday = DateTime.Now;
+                        var quickToday = SiteClock.Now;
                         (string Label, DateTime Start, DateTime End)[] quickRanges =
                         [
                             ("Last 7 days",  quickToday.AddDays(-8),  quickToday.AddDays(-1)),

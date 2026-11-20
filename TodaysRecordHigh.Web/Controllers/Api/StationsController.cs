@@ -57,7 +57,7 @@ public class StationsController : ControllerBase
         if (station is null)
             return NotFound(new { error = $"No station found for slug '{slug}'" });
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var effectiveMonthDay = ParseMonthDay(monthDay) ?? today.ToString("MM-dd");
         var dateLabel = DateTime.ParseExact($"2024-{effectiveMonthDay}", "yyyy-MM-dd",
             System.Globalization.CultureInfo.InvariantCulture).ToString("MMMM d");

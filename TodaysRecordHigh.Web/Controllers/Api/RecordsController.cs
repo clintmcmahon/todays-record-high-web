@@ -26,7 +26,7 @@ public class RecordsController : ControllerBase
         if (string.IsNullOrWhiteSpace(slugs))
             return BadRequest(new { error = "slugs parameter required" });
 
-        var monthDay = DateTime.Now.ToString("MM-dd");
+        var monthDay = SiteClock.Now.ToString("MM-dd");
 
         var stationPairs = slugs
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

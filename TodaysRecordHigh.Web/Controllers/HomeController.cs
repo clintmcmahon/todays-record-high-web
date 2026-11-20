@@ -44,7 +44,7 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var monthDay = today.ToString("MM-dd");
 
         var featuredStations = FeaturedSlugs

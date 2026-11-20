@@ -12,6 +12,11 @@ public class CurrentWeatherService : ICurrentWeatherService
     // Open-Meteo updates hourly; cache 20 min so cards feel live without hammering the API
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(20);
 
+    // Open-Meteo's free tier caps at 10,000 calls/day and answers 429 once it's spent.
+    // Static because typed HttpClient services are transient: every instance must see
+    // the same block. Retrying while blocked only burns time and keeps us on their radar.
+    private static long _blockedUntilUtcTicks;
+
     public CurrentWeatherService(HttpClient http, IMemoryCache cache, ILogger<CurrentWeatherService> logger)
     {
         _http = http;
@@ -26,6 +31,9 @@ public class CurrentWeatherService : ICurrentWeatherService
         if (_cache.TryGetValue(key, out CurrentConditions? cached))
             return cached;
 
+        if (DateTime.UtcNow.Ticks < Interlocked.Read(ref _blockedUntilUtcTicks))
+            return null;
+
         try
         {
             var url = $"v1/forecast?latitude={lat:F4}&longitude={lon:F4}" +
@@ -33,7 +41,24 @@ public class CurrentWeatherService : ICurrentWeatherService
                       "&daily=temperature_2m_max" +
                       "&temperature_unit=fahrenheit&timezone=auto&forecast_days=1";
 
-            var json = await _http.GetStringAsync(url);
+            using var response = await _http.GetAsync(url);
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var until = BackoffUntil(body, DateTime.UtcNow);
+                if (until is { } u)
+                {
+                    Interlocked.Exchange(ref _blockedUntilUtcTicks, u.Ticks);
+                    _logger.LogWarning("Open-Meteo rate limit hit; pausing requests until {Until:u}. Response: {Body}", u, body);
+                }
+                else
+                {
+                    _logger.LogWarning("Open-Meteo rejected request for {Lat},{Lon}: {Body}", lat, lon, body);
+                }
+                return null;
+            }
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
 
             var ianaZone = doc.RootElement.TryGetProperty("timezone", out var zoneEl)
@@ -73,6 +98,22 @@ public class CurrentWeatherService : ICurrentWeatherService
             _logger.LogWarning(ex, "Open-Meteo request failed for {Lat},{Lon}", lat, lon);
             return null;
         }
+    }
+
+    /// <summary>
+    /// How long to stop calling Open-Meteo after a 429, keyed off the limit its body names.
+    /// "Too many concurrent requests" clears as soon as in-flight calls finish, so it
+    /// blocks nothing: that request fails, the next one goes through.
+    /// </summary>
+    public static DateTime? BackoffUntil(string body, DateTime utcNow)
+    {
+        if (body.Contains("Daily", StringComparison.OrdinalIgnoreCase))
+            return utcNow.Date.AddDays(1);
+        if (body.Contains("Hourly", StringComparison.OrdinalIgnoreCase))
+            return new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0, DateTimeKind.Utc).AddHours(1);
+        if (body.Contains("Minutely", StringComparison.OrdinalIgnoreCase))
+            return utcNow.AddMinutes(1);
+        return null;
     }
 
     // Maps IANA zone + current UTC offset to the familiar US abbreviation (DST-aware).

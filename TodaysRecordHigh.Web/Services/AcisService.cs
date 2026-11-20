@@ -108,7 +108,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out double? cached))
             return cached;
 
-        var year = DateTime.Now.Year;
+        var year = SiteClock.Now.Year;
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
@@ -249,7 +249,7 @@ public class AcisService : IAcisService
 
         // All daily maxt from POR through yesterday (includes current year so far).
         // cnt_gt90 reduce is not supported on Threadex via ACIS, so we compute counts here.
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var daily = await GetDailyMaxtAsync(threadexSid);
         if (daily.Count == 0)
             return [];
@@ -281,7 +281,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out List<DailyDeparture>? cached) && cached is not null)
             return cached;
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var edate = year == today.Year
             ? today.AddDays(-1).ToString("yyyy-MM-dd")  // through yesterday (today may be missing)
             : $"{year}-12-31";
@@ -327,7 +327,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out PrecipData? cached))
             return cached;
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
 
         var request = new AcisStnDataRequest
@@ -480,7 +480,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out WarmSummerNightsData? cached))
             return cached;
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
 
         var request = new AcisStnDataRequest
@@ -573,7 +573,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out HeatWaveData? cached))
             return cached;
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var edate = today.AddDays(-1).ToString("yyyy-MM-dd");
 
         var request = new AcisStnDataRequest
@@ -770,7 +770,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out List<OnThisDayRecord>? cached) && cached is not null)
             return cached;
 
-        var today = DateTime.Now;
+        var today = SiteClock.Now;
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
@@ -878,7 +878,7 @@ public class AcisService : IAcisService
         if (_cache.TryGetValue(cacheKey, out List<DailyObs>? cached) && cached is not null)
             return cached;
 
-        var edate = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        var edate = SiteClock.Now.AddDays(-1).ToString("yyyy-MM-dd");
         var request = new AcisStnDataRequest
         {
             Sid = threadexSid,
@@ -1009,7 +1009,7 @@ public class AcisService : IAcisService
         // Which year to review: the one happening now if the window has already started
         // this year and no complete year is newer — show it even though it can't be
         // ranked yet, rather than silently falling back to last year's window.
-        var now = DateTime.Now;
+        var now = SiteClock.Now;
         var latestComplete = tempHistory[^1].Year;
         var windowHasStarted = now >= new DateTime(now.Year, startMonth, startDay);
         var defaultYear = windowHasStarted && now.Year > latestComplete ? now.Year : latestComplete;

@@ -106,5 +106,10 @@ public record RecordWatchSnapshot(
         .ToList();
 
     /// <summary>Confirmed first, then on-track, then closest-to-broken — the order a "watch" list reads in.</summary>
+    /// <summary>"November 20" for the date this snapshot covers, which overnight is yesterday.</summary>
+    public string DateLabel => DateTime.TryParseExact($"2000-{MonthDay}", "yyyy-MM-dd",
+        System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d)
+        ? d.ToString("MMMM d") : MonthDay;
+
     public List<RecordWatchEntry> Notable => Broken.Concat(OnTrack).Concat(Close).ToList();
 }

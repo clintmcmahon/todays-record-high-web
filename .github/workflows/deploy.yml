@@ -15,6 +15,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Test
+        run: dotnet test TodaysRecordHigh.Web/TodaysRecordHigh.Web.sln -c Release
+
       - name: Publish
         run: dotnet publish TodaysRecordHigh.Web/TodaysRecordHigh.Web.csproj -c Release -o ./publish
 
